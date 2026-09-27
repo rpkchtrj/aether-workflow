@@ -26,13 +26,23 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22.14.0'
+          node-version: 'lts/*'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      # Trusted publishing needs npm >= 11.5.1, newer than what ships with Node 22.
-      - name: Upgrade npm
-        run: npm install -g npm@latest
+      # Trusted publishing needs npm >= 11.5.1. Only upgrade when the bundled
+      # npm is older: an unconditional `npm@latest` fails EBADENGINE whenever
+      # the newest npm outpaces the Node release we are running on.
+      - name: Ensure npm supports trusted publishing
+        run: |
+          required=11.5.1
+          current="$(npm --version)"
+          oldest="$(printf '%s\n%s\n' "$required" "$current" | sort -V | head -1)"
+          if [ "$oldest" != "$required" ]; then
+            echo "npm $current is older than $required, upgrading"
+            npm install -g npm@latest
+          fi
+          npm --version
 
       - name: Verify tag matches package.json version
         if: startsWith(github.ref, 'refs/tags/v')
