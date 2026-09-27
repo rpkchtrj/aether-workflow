@@ -1,0 +1,50 @@
+{
+  "name": "aether-workflow",
+  "version": "1.2.0",
+  "description": "Personal AI-assisted engineering workflow: installs a set of explicit-invocation Claude Code skills, a global engineering contract, and private out-of-repo workflow state.",
+  "license": "MIT",
+  "author": "Rupak Chatterjee",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rpkchtrj/aether-workflow.git"
+  },
+  "homepage": "https://github.com/rpkchtrj/aether-workflow#readme",
+  "bugs": {
+    "url": "https://github.com/rpkchtrj/aether-workflow/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "skills",
+    "engineering-workflow",
+    "ai-assisted-development"
+  ],
+  "type": "module",
+  "bin": {
+    "aether": "bin/aether.js",
+    "aether-workflow": "bin/aether.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "templates/",
+    "hosts/",
+    "scripts/",
+    "GLOBAL_ENGINEERING_CONTRACT.md",
+    "MODEL_PROFILES.md",
+    "HOST_INTEGRATION_GUIDE.md",
+    "SKILLS.md",
+    "STATE_LAYOUT.md",
+    "WORKFLOW.md",
+    "INSTALL.md",
+    "CHANGELOG.md",
+    "VERSION"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

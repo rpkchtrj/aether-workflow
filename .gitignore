@@ -10,3 +10,7 @@
 
 # Personal/local override files
 .local/
+
+# Node
+node_modules/
+*.tgz

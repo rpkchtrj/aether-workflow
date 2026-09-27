@@ -111,11 +111,13 @@ The adapter uses Claude Code's native skill `model` frontmatter at install time.
 
 ## Install for Claude Code
 
-Clone this repository, then run:
+No clone required. With Node.js 18+ installed:
 
 ```bash
-./install.sh
+npx aether-workflow@latest install
 ```
+
+Then start a new Claude Code session and run `/engineering-guide status`.
 
 The installer:
 
@@ -125,21 +127,46 @@ The installer:
 4. adds a user-level import to `~/.claude/CLAUDE.md` without changing any target repository;
 5. installs helper scripts for private project state.
 
-The installer backs up an existing `~/.claude/CLAUDE.md` before modifying it.
+The installer backs up an existing `~/.claude/CLAUDE.md` before modifying it. Nothing is written into any application repository.
+
+To see exactly what would be touched before committing to it:
+
+```bash
+npx aether-workflow@latest install --dry-run
+```
+
+### Upgrade
+
+Re-run the install command. It is idempotent: skills are overwritten with the current model mapping, and the `CLAUDE.md` import is added only if missing.
+
+```bash
+npx aether-workflow@latest install
+```
 
 ### Verify
 
 ```bash
-./scripts/verify-install.sh
+npx aether-workflow verify
 ```
 
 ### Remove
 
 ```bash
-./scripts/uninstall.sh
+npx aether-workflow uninstall
 ```
 
 Uninstall removes the workflow-managed global skills and integration files. It does not delete your private project-state directory without an explicit `--purge-state`.
+
+### Working from a clone
+
+Contributors who clone the repository can run the same commands locally:
+
+```bash
+node bin/aether.js install --dry-run
+npm test
+```
+
+`./install.sh` still works and forwards to the Node installer, but it is deprecated.
 
 ## Daily usage
 
