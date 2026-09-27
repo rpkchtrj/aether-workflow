@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 - Release Pipeline Validation
+- No functional change. First release published through GitHub Actions Trusted Publishing (OIDC), validating the pipeline end to end.
+- `npm version` now keeps `VERSION` in sync with `package.json` automatically.
+
 ## 1.2.0 - One-Command Install
 - Published as the `aether-workflow` npm package: `npx aether-workflow@latest install`. Cloning the repository is no longer required.
 - Ported the installer from Bash + inline Python to dependency-free Node (18+), removing the undeclared `python3` requirement and the macOS/Linux/WSL-only constraint.

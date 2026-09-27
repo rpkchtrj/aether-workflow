@@ -45,6 +45,7 @@
     "VERSION"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "version": "node -p \"require('./package.json').version\" > VERSION && git add VERSION"
   }
 }
