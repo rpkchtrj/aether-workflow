@@ -1,0 +1,13 @@
+# OpenAI Codex. Verified 2026-09-27 against the official skills documentation:
+# Codex reads .agents/skills (repo), $HOME/.agents/skills (user) and
+# /etc/codex/skills (admin), and references skills directly by their `name`
+# field with no namespace prefix. Codex is therefore a name-prefix host even
+# though a Codex plugin format exists. Only user level is written; writing the
+# repo-level .agents/skills would modify an application repository.
+name: codex
+description: OpenAI Codex CLI / ChatGPT user skills
+namespace: name-prefix
+prefix: aether-wfl
+target: ~/.agents/skills
+frontmatter_keys: name, description
+invocation: $aether-wfl-<skill>

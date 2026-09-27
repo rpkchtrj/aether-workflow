@@ -1,0 +1,10 @@
+# Claude Code without the plugin loader. A flat skills directory has no
+# namespace, so the prefix has to be baked into each skill name.
+name: claude-flat
+description: Claude Code personal skills directory (fallback when the plugin route is unavailable)
+namespace: name-prefix
+prefix: aether-wfl
+target: ${CLAUDE_HOME}/skills
+frontmatter_keys: name, description, model, disable-model-invocation, metadata
+model_map: claude/models.yaml
+invocation: /aether-wfl-<skill>

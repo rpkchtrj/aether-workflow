@@ -1,0 +1,12 @@
+# Claude Code, installed as a plugin. The host derives the `aether-wfl:` prefix
+# from the plugin manifest name, so skill names stay canonical here.
+name: claude-plugin
+description: Claude Code plugin (generated locally, registered via the claude CLI)
+namespace: plugin
+prefix: aether-wfl
+target: ${WORKFLOW_HOME}/plugin
+skills_subdir: plugins/aether-wfl/skills
+frontmatter_keys: name, description, model, disable-model-invocation, metadata
+model_map: claude/models.yaml
+register: claude-cli
+invocation: /aether-wfl:<skill>

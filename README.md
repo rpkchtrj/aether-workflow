@@ -4,7 +4,9 @@ A portable, risk-based engineering workflow for using agentic AI as a force mult
 
 This is intentionally a **global personal workflow**, not a repository convention and not a team process. Install it once on your machine and use it across every codebase you work on. Your teammates can use completely different workflows.
 
-The repository contains portable Agent Skills plus host adapters. The default adapter today is Claude Code; future adapters can map the same skills to other agentic tools and their models.
+The repository contains portable Agent Skills plus host adapters. The skills themselves are agent-agnostic: Claude Code, OpenAI Codex and any agent that discovers `SKILL.md` directories are supported today, and adding another is a config file rather than a code change.
+
+All skills are namespaced under `aether-wfl`, so they never collide with unrelated skills you have installed.
 
 ## Core operating model
 
@@ -29,7 +31,7 @@ AI may analyze, challenge, implement, verify, attack assumptions, investigate in
 
 ## Why this is global
 
-Do not add these skills to each application repository unless you specifically want to. Claude Code supports personal skills under `~/.claude/skills/`, which load across your projects. This repository is the source distribution; the installer places the skills into your personal Claude Code skill directory.
+Do not add these skills to each application repository unless you specifically want to. They install at user scope and load across all your projects. This repository is the source distribution; the installer emits the skills into whichever agent you target.
 
 Your target repositories should contain only their normal team/project artifacts. A shared `CLAUDE.md` may remain in Git for team instructions. Your personal workflow contract is installed at user scope and is not part of the project repository.
 
@@ -84,6 +86,8 @@ Every gate is explicitly reported as `REQUIRED`, `N/A WITH REASON`, or `OPTIONAL
 
 ## Skills
 
+Listed below by their canonical (portable) names. The name you actually type depends on the host - see [Agent support and naming](#agent-support-and-naming). On Claude Code, `engineering-guide` is invoked as `/aether-wfl:engineering-guide`.
+
 ### Core reasoning and routing
 `engineering-orchestrator`, `requirements-architect`, `system-design-challenger`, `engineering-guide`, `engineering-reasoning-reviewer`
 
@@ -107,9 +111,11 @@ Skills declare a portable `model_profile` rather than a vendor-specific model ID
 
 Change the Claude mapping centrally in `hosts/claude/models.yaml`; do not rewrite every skill when models change. The source skills also show their model profile in a `## Model` section.
 
-The adapter uses Claude Code's native skill `model` frontmatter at install time. That field is a Claude Code extension; the underlying skill body remains portable.
+The adapter writes Claude Code's native skill `model` frontmatter at install time. That field is a Claude Code extension, so it is emitted only for Claude hosts and never reaches an agent that would not understand it; the underlying skill body remains portable.
 
-## Install for Claude Code
+Because the Claude plugin is generated on your machine at install time rather than shipped pre-built, `models.yaml` stays editable per machine - change it and re-run `install`.
+
+## Install
 
 No clone required. With Node.js 18+ installed:
 
@@ -117,12 +123,12 @@ No clone required. With Node.js 18+ installed:
 npx aether-workflow@latest install
 ```
 
-Then start a new Claude Code session and run `/engineering-guide status`.
+Then start a new Claude Code session and run `/aether-wfl:engineering-guide status`.
 
 The installer:
 
-1. installs the portable skills into `~/.claude/skills/`;
-2. injects Claude-specific model mappings and explicit-invocation controls from `hosts/claude/`;
+1. emits the portable skills for the selected host, namespaced under `aether-wfl` (by default a Claude Code plugin generated at `~/.engineering-workflow/plugin/` and registered with the `claude` CLI);
+2. injects Claude-specific model mappings and explicit-invocation controls from `hosts/claude/models.yaml`;
 3. installs the global engineering contract under `~/.engineering-workflow/`;
 4. adds a user-level import to `~/.claude/CLAUDE.md` without changing any target repository;
 5. installs helper scripts for private project state.
@@ -135,19 +141,33 @@ To see exactly what would be touched before committing to it:
 npx aether-workflow@latest install --dry-run
 ```
 
+### Choose a host
+
+```bash
+npx aether-workflow hosts                                  # list adapters
+npx aether-workflow install --host codex
+npx aether-workflow install --host generic --target <dir>
+```
+
+If the `claude` CLI is not on `PATH`, the default host cannot register its generated plugin. The installer reports that and you fall back with `--host claude-flat`.
+
 ### Upgrade
 
-Re-run the install command. It is idempotent: skills are overwritten with the current model mapping, and the `CLAUDE.md` import is added only if missing.
+Re-run the install command. It is idempotent: skills are re-emitted against the current model mapping, and the `CLAUDE.md` import is added only if missing.
 
 ```bash
 npx aether-workflow@latest install
 ```
+
+Upgrading from before 1.3.0 also removes the old unprefixed skills from `~/.claude/skills/`, so the two layouts never coexist. Unrelated skills sharing that directory are left untouched, and `verify` fails loudly if a duplicate is ever left behind.
 
 ### Verify
 
 ```bash
 npx aether-workflow verify
 ```
+
+`verify` checks the host recorded by the last install: that every skill is present under the name that host publishes it as, that the frontmatter `name` matches its directory, and that no host received a frontmatter key it does not understand.
 
 ### Remove
 
@@ -168,18 +188,40 @@ npm test
 
 `./install.sh` still works and forwards to the Node installer, but it is deprecated.
 
+## Agent support and naming
+
+The workflow is agent-agnostic. `skills/` is the single portable source; a host adapter (`hosts/<name>/host.yaml`) decides how it is emitted.
+
+| Host | Install | Invocation |
+|---|---|---|
+| Claude Code (default) | `install` | `/aether-wfl:engineering-guide` |
+| Claude Code, no plugin loader | `install --host claude-flat` | `/aether-wfl-engineering-guide` |
+| OpenAI Codex | `install --host codex` | `$aether-wfl-engineering-guide` |
+| Any `SKILL.md` agent | `install --host generic --target <dir>` | host-specific |
+
+There is no cross-agent convention for namespacing skills. The colon form is Claude Code deriving a namespace from a plugin manifest name; it is not something other agents implement. Codex, for example, has its own plugin format but still references skills by their bare `name`.
+
+So the prefix is applied by whichever mechanism the host actually has:
+
+| `namespace` | Host provides | Emitted skill name |
+|---|---|---|
+| `plugin` | a namespace from the plugin manifest | canonical (`engineering-guide`) |
+| `name-prefix` | one flat namespace | prefixed (`aether-wfl-engineering-guide`) |
+
+Either way the `aether-wfl` namespace is present, and it is never doubled. Adding an agent means writing `hosts/<name>/host.yaml` - see [`hosts/README.md`](hosts/README.md).
+
 ## Daily usage
 
 At the start of work:
 
 ```text
-/engineering-guide resume
+/aether-wfl:engineering-guide resume
 ```
 
 For a new meaningful change:
 
 ```text
-/engineering-orchestrator
+/aether-wfl:engineering-orchestrator
 ```
 
 The orchestrator first classifies the change and presents the gate matrix. For meaningful work, the normal sequence is:
@@ -212,13 +254,13 @@ For a T0/T1 change, the route is intentionally shorter, but security impact and 
 After syncing from staging/prod/release, run:
 
 ```text
-/engineering-guide sync-check
+/aether-wfl:engineering-guide sync-check
 ```
 
 If material drift is found, invoke:
 
 ```text
-/documentation-guardian
+/aether-wfl:documentation-guardian
 ```
 
 The guardian shows proposed changes first and waits for `GO`.
@@ -231,10 +273,16 @@ This workflow is deliberately designed so that AI reduces typing and increases c
 
 ## Host portability
 
-The core `skills/*/SKILL.md` files follow the open Agent Skills approach as much as possible. Claude Code has extra frontmatter/features; those are kept under `hosts/claude/`. A future Codex or other host adapter can map the same skill profiles and invocation policies to its own model/tooling without changing the engineering rules.
+The core `skills/*/SKILL.md` files follow the open Agent Skills approach as much as possible and contain no host-specific frontmatter. Each adapter declares an allowlist of the keys its host understands, and the installer rebuilds frontmatter from that list — so Claude Code's `model` and `disable-model-invocation` extensions are emitted for Claude hosts and never reach one that would choke on them.
+
+Where a host has no namespace of its own, the emitter also rewrites references between skills, so a prefixed install never points at a name that does not exist on that host.
+
+Adding a host adapter maps the same skill profiles and invocation policies onto new tooling without changing the engineering rules, and without changing `lib/`.
 
 ## Source references
 
 Claude Code Skills: https://code.claude.com/docs/en/skills
+Claude Code plugins and marketplaces: https://code.claude.com/docs/en/plugin-marketplaces
 Claude Code memory / user-level CLAUDE.md: https://code.claude.com/docs/en/memory
+Codex skills: https://learn.chatgpt.com/docs/build-skills
 Agent Skills: https://agentskills.io/

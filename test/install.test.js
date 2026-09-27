@@ -28,20 +28,19 @@ const silent = () => {};
 test('install places skills with host frontmatter and links the contract', () => {
   const box = sandbox();
   try {
-    const result = install({ env: box.env, log: silent });
+    const result = install({ env: box.env, register: false, log: silent });
     assert.ok(result.skills.length >= 16);
 
-    const guide = fs.readFileSync(
-      path.join(box.env.CLAUDE_HOME, 'skills', 'engineering-guide', 'SKILL.md'),
-      'utf8',
-    );
-    assert.match(guide, /^---\nmodel: opus\ndisable-model-invocation: true\n/);
-    assert.match(guide, /^name: engineering-guide$/m);
+    // Default host is the Claude plugin: names stay canonical because the
+    // plugin manifest supplies the `aether-wfl:` prefix.
+    const skillsRoot = path.join(box.env.ENGINEERING_WORKFLOW_HOME, 'plugin', 'plugins', 'aether-wfl', 'skills');
 
-    const impl = fs.readFileSync(
-      path.join(box.env.CLAUDE_HOME, 'skills', 'implementation-agent', 'SKILL.md'),
-      'utf8',
-    );
+    const guide = fs.readFileSync(path.join(skillsRoot, 'engineering-guide', 'SKILL.md'), 'utf8');
+    assert.match(guide, /^---\nname: engineering-guide\n/);
+    assert.match(guide, /^model: opus$/m);
+    assert.match(guide, /^disable-model-invocation: true$/m);
+
+    const impl = fs.readFileSync(path.join(skillsRoot, 'implementation-agent', 'SKILL.md'), 'utf8');
     assert.match(impl, /^model: sonnet$/m);
 
     const global = fs.readFileSync(path.join(box.env.CLAUDE_HOME, 'CLAUDE.md'), 'utf8');
@@ -60,8 +59,8 @@ test('install is idempotent and preserves existing CLAUDE.md content', () => {
     fs.mkdirSync(box.env.CLAUDE_HOME, { recursive: true });
     fs.writeFileSync(path.join(box.env.CLAUDE_HOME, 'CLAUDE.md'), '# My rules\nBe concise.\n');
 
-    install({ env: box.env, log: silent });
-    install({ env: box.env, log: silent });
+    install({ env: box.env, register: false, log: silent });
+    install({ env: box.env, register: false, log: silent });
 
     const global = fs.readFileSync(path.join(box.env.CLAUDE_HOME, 'CLAUDE.md'), 'utf8');
     assert.match(global, /# My rules/);
@@ -90,14 +89,14 @@ test('dry run reports the plan without writing', () => {
 test('uninstall removes skills and the import but keeps project state', () => {
   const box = sandbox();
   try {
-    install({ env: box.env, log: silent });
+    install({ env: box.env, host: 'claude-flat', register: false, log: silent });
     const stateDir = path.join(box.env.ENGINEERING_WORKFLOW_HOME, 'projects', 'abc123');
     fs.mkdirSync(stateDir, { recursive: true });
     fs.writeFileSync(path.join(stateDir, 'WORK_LOG.md'), 'kept');
 
     uninstall({ env: box.env, log: silent });
 
-    assert.equal(fs.existsSync(path.join(box.env.CLAUDE_HOME, 'skills', 'engineering-guide')), false);
+    assert.equal(fs.existsSync(path.join(box.env.CLAUDE_HOME, 'skills', 'aether-wfl-engineering-guide')), false);
     assert.equal(fs.readFileSync(path.join(stateDir, 'WORK_LOG.md'), 'utf8'), 'kept');
     const global = fs.readFileSync(path.join(box.env.CLAUDE_HOME, 'CLAUDE.md'), 'utf8');
     assert.doesNotMatch(global, /Personal AI-Assisted Engineering Workflow/);
@@ -109,7 +108,7 @@ test('uninstall removes skills and the import but keeps project state', () => {
 test('uninstall --purge-state removes everything', () => {
   const box = sandbox();
   try {
-    install({ env: box.env, log: silent });
+    install({ env: box.env, register: false, log: silent });
     uninstall({ env: box.env, purgeState: true, log: silent });
     assert.equal(fs.existsSync(box.env.ENGINEERING_WORKFLOW_HOME), false);
   } finally {
@@ -120,8 +119,11 @@ test('uninstall --purge-state removes everything', () => {
 test('verify fails loudly on a missing skill', () => {
   const box = sandbox();
   try {
-    install({ env: box.env, log: silent });
-    fs.rmSync(path.join(box.env.CLAUDE_HOME, 'skills', 'chaos-engineer'), { recursive: true });
+    install({ env: box.env, register: false, log: silent });
+    fs.rmSync(
+      path.join(box.env.ENGINEERING_WORKFLOW_HOME, 'plugin', 'plugins', 'aether-wfl', 'skills', 'chaos-engineer'),
+      { recursive: true },
+    );
     const result = verify({ env: box.env, log: silent });
     assert.equal(result.ok, false);
     assert.match(result.problems.join('\n'), /chaos-engineer/);

@@ -1,0 +1,10 @@
+# Any agent that discovers skills as <dir>/SKILL.md folders. Supply the
+# directory with `--target <dir>`; nothing host-specific is emitted, so the
+# prefix is carried by the skill name.
+name: generic
+description: Any agent that reads SKILL.md directories (target supplied at install time)
+namespace: name-prefix
+prefix: aether-wfl
+target: ${TARGET}
+frontmatter_keys: name, description
+invocation: <host-specific>-aether-wfl-<skill>

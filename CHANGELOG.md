@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0
+
+- Skills are now namespaced under `aether-wfl`. Claude Code installs as a generated plugin (`/aether-wfl:engineering-guide`); hosts with a flat skill namespace get the prefix baked into the skill name (`aether-wfl-engineering-guide`).
+- Host adapters are declarative. `hosts/<name>/host.yaml` describes a host's namespace mechanism, target directory and frontmatter allowlist; adding an agent needs no code change.
+- Added `claude-plugin` (default), `claude-flat`, `codex` and `generic` adapters, and `aether hosts` to list them.
+- `install` takes `--host`, `--target` and `--no-register`. The default host registers its generated marketplace through the `claude` CLI and falls back with a reported reason if the CLI is absent.
+- Frontmatter is rebuilt per host from an allowlist, so Claude's `model` and `disable-model-invocation` no longer reach hosts that do not understand them.
+- Cross-references between skills are rewritten on name-prefix hosts so a prefixed install does not point at names that do not exist there.
+- Upgrading removes the pre-namespacing unprefixed skills; unrelated skills sharing the directory are left untouched. `verify` fails if both layouts are present.
+- `install.json` records the host that ran, so `verify` and `uninstall` act on it rather than the default.
+
 ## 1.2.1 - Release Pipeline Validation
 - No functional change. First release published through GitHub Actions Trusted Publishing (OIDC), validating the pipeline end to end.
 - `npm version` now keeps `VERSION` in sync with `package.json` automatically.
