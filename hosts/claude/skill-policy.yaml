@@ -1,0 +1,2 @@
+# All personal engineering workflow skills are explicit/user-triggered by default.
+all_disable_model_invocation: true

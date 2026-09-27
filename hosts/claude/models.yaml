@@ -1,0 +1,3 @@
+# Claude Code model aliases. Update centrally when your preferred model changes.
+strategic: opus
+implementation: sonnet
