@@ -1,3 +1,4 @@
+.github/workflows/publish.yml
 .gitignore
 bin/aether.js
 CHANGELOG.md
