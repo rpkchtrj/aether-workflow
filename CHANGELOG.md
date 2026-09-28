@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 2.0.0
+
+**Breaking:** private state moved to a per-change layout. `WORKFLOW_STATE.md` is replaced by `CHANGES.md` plus `changes/<change-id>/STATE.md`, and `init-project` no longer creates project-level `requirements/`, `decisions/`, `architecture/`, `security/`, `tracing/` or `performance/`. Existing state is not migrated.
 
 **User overlay.** Local tweaks now survive an upgrade. `~/.engineering-workflow/config.yaml` and `~/.engineering-workflow/overrides/<skill>.md` are user-owned: the installer seeds them once if absent and never writes over them again. An override is appended to its skill as a `## Local overrides` section - additive layering, since prose cannot be merged semantically.
 
