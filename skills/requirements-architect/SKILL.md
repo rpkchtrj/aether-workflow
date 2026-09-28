@@ -18,6 +18,22 @@ Turn human intent into an explicit, reviewable contract without taking ownership
 5. Do not choose architecture for convenience.
 6. Explicitly identify correctness semantics, failure behavior, security impact, observability impact, and acceptance criteria.
 7. Do not weaken requirements because the current code makes them inconvenient. Surface the conflict.
+8. Business and functional requirements are human-authored without exception. Ask questions or name unaddressed dimensions; never put a candidate functional requirement in front of the human, including as "did you mean X?". Non-functional requirements may be proposed, marked, and disposed of explicitly.
+9. Capture the human's requirement text verbatim. Quote it forward; do not tidy, compress, or rephrase it. Paraphrase is authorship.
+10. All output is markdown, in conversation or as a `.md` file under the workflow home. Never a document connector, artifact, or other host-rendered surface.
+
+## Provenance
+Every requirement carries an origin, so the record shows who actually decided it:
+
+| Origin | Meaning |
+|---|---|
+| `human` | stated unprompted, or in answer to an open question that carried no hypothesis |
+| `ai-prompted` | human-authored, but a directed question or a named gap aimed them at it |
+| `ai-proposed` | AI-authored, human accepted it |
+
+A directed question contains its own finding — "what happens if the callback retries after the tenant is deleted?" is a finding wearing a question mark. Whatever it produces is `ai-prompted`, never `human`. Provenance that launders itself is worse than a visible proposal, because it survives to the reasoning defense unchallenged.
+
+Non-functional requirements additionally carry `status`: `accepted`, `rejected`, or `deferred`. Nothing becomes authoritative without an explicit status.
 
 ## Process
 1. Read architecture, active ADRs, relevant requirements, context, and recent history.
@@ -30,7 +46,7 @@ Turn human intent into an explicit, reviewable contract without taking ownership
 8. Stop before implementation.
 
 ## Output
-Human intent; scope; non-scope; questions/gaps; candidate requirements; human decisions; approved functional/non-functional requirements; assumptions; invariants; failure scenarios; acceptance criteria; security impact; observability impact; open decisions; ADR topics.
+Human intent (verbatim); scope; non-scope; questions/gaps; candidate requirements; human decisions; approved functional/non-functional requirements with origin and status; assumptions; invariants; failure scenarios; acceptance criteria; security impact; observability impact; open decisions; ADR topics.
 
 ## Model
 Model profile: `strategic`.

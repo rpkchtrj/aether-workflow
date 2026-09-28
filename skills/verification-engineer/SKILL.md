@@ -18,6 +18,8 @@ Turn requirements and invariants into evidence.
 5. Add failure-path coverage for stateful mechanisms.
 6. Match verification depth to the change class and actual architecture.
 7. Include security and observability evidence when those concerns are affected.
+8. Report the exact command and its observed output for every claim. An unobserved result is recorded as `NOT RUN`, never as a pass.
+9. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Test lenses
 Unit; contract/API; integration; negative/error paths; concurrency/race; property/invariant; persistence/recovery; migration/rollback; load/soak; security/abuse; trace propagation/telemetry safety; regression.

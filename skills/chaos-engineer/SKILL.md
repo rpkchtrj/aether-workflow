@@ -17,6 +17,7 @@ Create realistic failures without turning the development environment into an un
 4. Every experiment has a cleanup plan and boundary.
 5. Never destroy unrelated user data or shared environments.
 6. Preserve command output and evidence.
+7. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Experiment format
 Hypothesis; target; expected invariant; fault; observation window; evidence; result; cleanup; follow-up.

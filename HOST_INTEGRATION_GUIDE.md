@@ -47,7 +47,13 @@ Change the mapping in one place when your preferred model changes.
 
 ## Explicit invocation policy
 
-All workflow skills are configured as explicit/user-triggered by default in the Claude adapter because they represent deliberate engineering stages or may have side effects. The orchestrator can recommend a next skill, but it must not silently turn a recommendation into a write action.
+Invocation mode is declared per skill as `metadata.workflow_invocation`, so the declaration stays portable and the adapter supplies only the mechanism (`disable-model-invocation` on Claude).
+
+`engineering-orchestrator` declares `auto`: it is the workflow's single entry point, so the model may reach for it when a change begins. A false positive costs a paragraph; a false negative just leaves the human typing it.
+
+Every other skill declares `explicit` and is dispatched by the orchestrator's routing table. This matters for more than side effects: a gate that fires on description matching cannot be distinguished from a gate that was skipped, which would defeat the gate matrix. Dispatch is deterministic; model invocation is not.
+
+Dispatching a skill is still not write authorization. The orchestrator routes; the human authorizes every material write.
 
 ## Codex adapter
 

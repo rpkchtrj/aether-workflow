@@ -1,7 +1,7 @@
 {
   "name": "aether-workflow",
   "version": "1.4.0",
-  "description": "Personal AI-assisted engineering workflow: installs a set of explicit-invocation Claude Code skills, a global engineering contract, and private out-of-repo workflow state.",
+  "description": "Personal AI-assisted engineering workflow: installs an orchestrator-dispatched set of Claude Code skills, a global engineering contract, and private out-of-repo workflow state.",
   "license": "MIT",
   "author": "Rupak Chatterjee",
   "repository": {
@@ -40,6 +40,7 @@
     "SKILLS.md",
     "STATE_LAYOUT.md",
     "WORKFLOW.md",
+    "WORKFLOW_GUIDE.md",
     "INSTALL.md",
     "CHANGELOG.md",
     "VERSION"

@@ -28,6 +28,7 @@ The skill is invoked explicitly when the human asks for reconciliation, when ano
 2. Show a proposed diff/patch or exact proposed content before any documentation write. Wait for explicit human GO.
 3. Never invent architectural intent, business requirements, guarantees, or decisions from code alone. Flag them as contradictions/decisions requiring human input.
 4. Do not rewrite historical team ADRs or private decision history. Add a new decision/supersession/correction when appropriate.
+5. All documentation this workflow produces is markdown - in conversation, or a `.md` file in the repository or under the workflow home. Never a document connector, artifact, canvas, or other host-rendered surface, whatever the length. Markdown is diffable, greppable, and outlives the tool that wrote it.
 5. Prefer updating an existing important document over creating a new one.
 6. Do not create a document for a change with no durable informational value.
 7. A tiny code change with significant downstream effects must still be flagged.

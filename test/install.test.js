@@ -40,6 +40,13 @@ test('install places skills with host frontmatter and links the contract', () =>
     assert.match(guide, /^model: opus$/m);
     assert.match(guide, /^disable-model-invocation: true$/m);
 
+    // The orchestrator is the workflow's one model-reachable entry point.
+    const orchestrator = fs.readFileSync(
+      path.join(skillsRoot, 'engineering-orchestrator', 'SKILL.md'),
+      'utf8',
+    );
+    assert.match(orchestrator, /^disable-model-invocation: false$/m);
+
     const impl = fs.readFileSync(path.join(skillsRoot, 'implementation-agent', 'SKILL.md'), 'utf8');
     assert.match(impl, /^model: sonnet$/m);
 

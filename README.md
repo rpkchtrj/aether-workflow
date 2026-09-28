@@ -12,22 +12,29 @@ All skills are namespaced under `aether-wfl`, so they never collide with unrelat
 
 ```text
 Human intent
+  -> select or start a change
   -> change classification
   -> security impact check
   -> documentation impact check
   -> human-owned requirements
-  -> AI challenge
+  -> human-stated design, threat model, trace model
+  -> AI challenge of each
   -> human decision
   -> explicit GO
   -> AI implementation
   -> machine verification
   -> adversarial/security/distributed/tracing/performance/chaos checks as applicable
   -> independent review
+  -> reasoning defense
   -> documentation reconciliation
   -> human final approval
 ```
 
 AI may analyze, challenge, implement, verify, attack assumptions, investigate incidents, and reconcile factual documentation. **The human owns requirements, invariants, correctness semantics, architecture, security decisions, trade-offs, acceptance criteria, and final approval.**
+
+`engineering-orchestrator` is the control plane and the only skill you talk to. It dispatches every other skill from a fixed routing table and stops only at enumerated stop points, so you spend turns on decisions rather than on typing skill names. Dispatch is not autonomy: choosing the next skill is mechanical, and every judgment stays yours.
+
+**[WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md) walks one change of each class, T0 through T3, end to end** — what the orchestrator does, where it stops, and what it wants from you at each stop. Start there if you want to see the workflow rather than read its rules.
 
 ## Why this is global
 
@@ -43,16 +50,24 @@ The workflow keeps your personal engineering state outside each target repositor
 ~/.engineering-workflow/
   projects/
     <project-id>/
-      WORKFLOW_STATE.md
+      PROJECT.md
+      CHANGES.md          # index of every change; read at session start
       WORK_LOG.md
-      requirements/
-      decisions/
-      architecture/
-      security/
-      tracing/
+      changes/
+        <change-id>/
+          STATE.md        # class, gate matrix, stage ledger, provenance
+          requirements/
+          decisions/
+          architecture/
+          security/
+          tracing/
+          performance/
       incidents/
-      performance/
 ```
+
+State is scoped to a **change**, not to a project, because you keep several open at once and each spans many sessions. At session start the orchestrator lists what is in progress and asks which one — it never picks for you, even when only one change is open, and never assumes a new request belongs to an in-progress change.
+
+Each `STATE.md` carries an append-only stage ledger recording the `base_sha` and change surface at every entry. On resume those are compared against the current tree: anything that moved marks its gates `STALE — RE-VERIFY`. A ledger entry records what was observed then, not what is true now.
 
 This means you can maintain private requirements, decision records, architecture notes, security reasoning, incident notes, and workflow continuity without asking the team to adopt them.
 
@@ -100,12 +115,35 @@ Security is not a class. It is an always-on lens. A T1 change becomes T2/T3 when
 
 Every gate is explicitly reported as `REQUIRED`, `N/A WITH REASON`, or `OPTIONAL WITH REASON`; the orchestrator does not silently omit important concerns.
 
+## How a gate is allowed to disappear
+
+`N/A WITH REASON` is the weak point of any gate matrix. The judgment is model-side, the label looks identical whether it was right or wrong, and prose like "no security boundary" cannot be contradicted by anything. Four constraints narrow it:
+
+**Gates start `REQUIRED` and are downgraded by an explicit act.** The matrix is never composed from scratch — a gate nobody considered and a gate deliberately dropped look the same once the row is missing.
+
+**Class floors.** At T3, security, senior review and engineering reasoning cannot be downgraded; at T2 and above, neither can verification or documentation impact. If a floored gate looks inapplicable, the classification was wrong, not the gate.
+
+**Downgrade reasons must be falsifiable.** Not "no security boundary" but "change surface is `src/billing/format.ts` only; imports no `net/`, `db/`, `auth/` or `queue/` module" — a claim that can turn out to be false. Tripwires check it mechanically against the change surface, and a fired tripwire forces the gate back to `REQUIRED` *without asking you*. Prompting on each would hand you a list of negatives to approve, which is how rubber-stamping starts. Model judgment may add a gate; it may never remove one against evidence.
+
+**The matrix is re-evaluated when evidence exists.** It is first decided off a sentence of description, when the least is known. Tripwires re-run at S8 against the declared change surface, and again against the real diff. A gate reopened at S8 costs one dispatch; one wrongly closed at classification costs an incident.
+
+### What this does not catch
+
+Tripwires read structure, not meaning. A change can touch a security boundary semantically while importing nothing suspicious — an off-by-one in a tenant-id comparison, sitting in a file with no security-shaped imports, reachable only through a call chain the tripwire never inspects. Nothing fires. The matrix reports `N/A WITH REASON` against a reason that is *technically true and substantively wrong*.
+
+The constraints above shrink silent skips to cases that need semantic understanding to spot, and put a hard floor under the ones where being wrong is worst. They do not eliminate the class, and a clean gate matrix is not proof of completeness. That residue is precisely what S10, the reasoning defense, exists to catch — it asks what your change does, not what it imports.
+
 ## Skills
 
-Listed below by their canonical (portable) names. The name you actually type depends on the host - see [Agent support and naming](#agent-support-and-naming). On Claude Code, `engineering-guide` is invoked as `/aether-wfl:engineering-guide`.
+Listed below by their canonical (portable) names. **You invoke only `engineering-orchestrator`** — on Claude Code, `/aether-wfl:engineering-orchestrator`. It is also the one skill the model may reach for on its own when you describe a change. Everything else is dispatched by its routing table, never by description matching: a gate that fired probabilistically could not be told apart from a gate that was skipped.
+
+See [Agent support and naming](#agent-support-and-naming) for how names map per host.
+
+### Control plane
+`engineering-orchestrator` — the only entry point
 
 ### Core reasoning and routing
-`engineering-orchestrator`, `requirements-architect`, `system-design-challenger`, `engineering-guide`, `engineering-reasoning-reviewer`
+`requirements-architect`, `system-design-challenger`, `engineering-guide`, `engineering-reasoning-reviewer`
 
 ### Implementation and verification
 `implementation-agent`, `runtime-engineer`, `verification-engineer`, `senior-code-reviewer`
@@ -144,7 +182,7 @@ Then start a new Claude Code session and run `/aether-wfl:engineering-guide stat
 The installer:
 
 1. emits the portable skills for the selected host, namespaced under `aether-wfl` (by default a Claude Code plugin generated at `~/.engineering-workflow/plugin/` and registered with the `claude` CLI);
-2. injects Claude-specific model mappings and explicit-invocation controls from `hosts/claude/models.yaml`;
+2. injects Claude-specific model mappings from `hosts/claude/models.yaml` and the per-skill invocation gate each skill declares in its own frontmatter;
 3. installs the global engineering contract under `~/.engineering-workflow/`;
 4. adds a user-level import to `~/.claude/CLAUDE.md` without changing any target repository;
 5. installs helper scripts for private project state.
@@ -228,64 +266,65 @@ Either way the `aether-wfl` namespace is present, and it is never doubled. Addin
 
 ## Daily usage
 
-At the start of work:
-
-```text
-/aether-wfl:engineering-guide resume
-```
-
-For a new meaningful change:
+Describe what you want, or open the orchestrator directly:
 
 ```text
 /aether-wfl:engineering-orchestrator
 ```
 
-The orchestrator first classifies the change and presents the gate matrix. For meaningful work, the normal sequence is:
+It lists the changes in progress and asks which one this session is about, or whether to start a new one. From there it classifies the change, presents the gate matrix, and dispatches the route — streaming each skill's output in full as it completes, and stopping only where a decision is owed to you.
 
-```text
-Human intent
--> Requirements Architect
--> Security pre-flight
--> System Design Challenger
--> Security Adversary
--> Tracing Engineer (when applicable)
--> Human decision / decision record
--> Human GO
--> Implementation Agent
--> Runtime Engineer (when relevant)
--> Verification Engineer
--> Distributed Adversary (when distributed)
--> Security review (when applicable)
--> Trace validation (when applicable)
--> Senior Code Review
--> Engineering Reasoning Review
--> Documentation Guardian
--> Human final approval
-```
+The stop points are a closed set. A stop not on the table is not a stop; a stop on the table that applies is mandatory and is recorded with your verbatim response.
 
-For a T0/T1 change, the route is intentionally shorter, but security impact and downstream side effects are still checked first.
+| ID | Stop | You supply |
+|---|---|---|
+| S1 | Intent and scope | what is being built and why |
+| S2 | Requirements | business/functional requirements, authored by you |
+| S3 | NFR disposition | accept / reject / defer each proposed non-functional requirement |
+| S4 | Design statement | components, ownership, contracts, state, failure behavior |
+| S5 | Threat model | assets, actors, trust boundaries, abuse cases |
+| S6 | Trace model | logical operations, causal boundaries |
+| S7 | Design decision / ADR | resolve challenges; dispose of proposed alternatives |
+| S8 | Pre-write GO | approve the declared change surface |
+| S9 | Stop-ship finding | fix / accept risk / abandon |
+| S10 | Reasoning defense | answers from your own understanding |
+| S11 | Documentation write GO | approve the proposed diff |
+| S12 | Final approval | ship / do not ship |
+
+**S2, S8, S10, and S12 are never waived above T0.** You state the requirements, authorize the write, defend the change, and approve the ship. Everything else is risk-proportional.
+
+For a T0/T1 change the route is intentionally shorter, but security impact and downstream side effects are still checked first.
+
+See [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md) for a worked example of each class.
+
+### When you do not have the model ready
+
+The adversarial skills are built on *you state the model, AI attacks it* — `system-design-challenger` reviews your design, `security-adversary` starts from your threat model. On an unfamiliar subsystem you may not have one, which is normal rather than a failure. The orchestrator escalates along a fixed ladder, and every rung is recorded:
+
+| Rung | Form | Result is tagged |
+|---|---|---|
+| 1 | Open question, no hypothesis | `human` |
+| 2 | Directed probe containing a hypothesis | `ai-prompted` |
+| 3 | Named gaps, no content | `ai-prompted` |
+| 4 | Explicit candidate with trade-offs | `ai-proposed`, needs disposition |
+
+Business and functional requirements are limited to rungs 1 and 3 — a proposed requirement put in front of a busy engineer gets accepted, which makes proposing it the same as deciding it. Everything else may use all four rungs.
+
+At S10 the reasoning reviewer targets `ai-proposed` and `ai-prompted` elements hardest, because those are what you are least able to defend cold. That is what makes leaning on rung 4 safe rather than merely fast.
+
+## Markdown only
+
+Every artifact this workflow produces is markdown — in conversation, or a `.md` file in the repository or under the workflow home. Never a document connector, artifact, canvas, or other host-rendered surface, whatever the length. Markdown is diffable, greppable, reviewable a year later, and outlives the tool that wrote it.
 
 ## Branch sync
 
-After syncing from staging/prod/release, run:
-
-```text
-/aether-wfl:engineering-guide sync-check
-```
-
-If material drift is found, invoke:
-
-```text
-/aether-wfl:documentation-guardian
-```
-
-The guardian shows proposed changes first and waits for `GO`.
+A pull, rebase, or merge from staging/prod/release is new change input. The orchestrator detects it on resume via the recorded `base_sha`, marks the affected gates `STALE — RE-VERIFY`, and re-runs them before continuing. If material documentation drift is found, `documentation-guardian` shows proposed changes first and waits for `GO`.
 
 ## The critical rule
 
 **Do not confuse AI-generated code that works with an engineering system you understand and can defend.**
 
-This workflow is deliberately designed so that AI reduces typing and increases challenge capacity without reducing human engineering reasoning.
+This workflow is deliberately designed so that AI reduces typing and increases challenge capacity without reducing human engineering reasoning. Dispatch removes the typing between gates; it removes no gate. The faster a change arrives, the less of it has been internalised — which is why S10 is the one stage that gets harder as everything else gets faster.
 
 ## Host portability
 

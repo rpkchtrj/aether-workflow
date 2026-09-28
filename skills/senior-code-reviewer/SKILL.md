@@ -17,6 +17,9 @@ Provide an independent engineering review rather than rubber-stamping implementa
 4. Check error handling, cancellation, ownership, API boundaries, dependencies, observability, security, and operational behavior.
 5. Call out prose guarantees stronger than actual implementation.
 6. Do not silently fix the change while reviewing.
+7. Review the diff and the approved requirements directly. Do not accept the implementation agent's rationale or another skill's conclusions as input — an independent review of a summary is not an independent review.
+8. Findings that are stop-ship are raised immediately, not held until the end of the pass.
+9. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Finding format
 Issue; severity; evidence; impact; failure/reproduction; recommended direction; test/invariant/doc change.

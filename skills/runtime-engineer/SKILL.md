@@ -18,6 +18,7 @@ Turn AI-generated implementation into runtime intuition and evidence-based under
 5. For memory, explain allocation, GC/runtime pressure, object lifetime, and pooling only where evidence supports it.
 6. For I/O/network code, explain cancellation, timeout, connection lifetime, backpressure, retries, and resource cleanup.
 7. Use the language/runtime appropriate to the repository. Do not assume Go semantics for Node.js or vice versa.
+8. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Typical topics
 Go: goroutines, channels, context, mutex/atomic, allocations, GC, scheduler, interfaces, blocking syscalls.

@@ -18,6 +18,7 @@ Optimize measured bottlenecks rather than imagined ones.
 5. Compare before/after with stable methodology.
 6. Never trade correctness or security for benchmark improvement without explicit human approval and a documented decision.
 7. Separate telemetry overhead from application overhead before removing observability.
+8. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Metrics
 Latency distribution; throughput; saturation; CPU; memory; allocations; GC; contention; queue depth; I/O; dependency latency; recovery time; resource utilization.

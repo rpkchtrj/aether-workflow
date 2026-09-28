@@ -10,6 +10,7 @@ import { verify } from '../lib/verify.js';
 import { loadHost, listHosts, parseHostFile, resolveTarget } from '../lib/hosts.js';
 import { emitSkill, emittedName, rewriteReferences, ownedSkillDirs, planEmission } from '../lib/emit.js';
 import { resolvePaths } from '../lib/paths.js';
+import { readInvocationMode } from '../lib/skills.js';
 
 function sandbox() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'aether-host-'));
@@ -329,4 +330,32 @@ test('every emitted skill name is a valid, non-colliding identifier', () => {
   } finally {
     box.cleanup();
   }
+});
+
+test('invocation mode is per skill: only an auto skill is model-reachable', () => {
+  const box = sandbox();
+  try {
+    const host = hostFor('claude-plugin', box.env);
+    const build = (mode) =>
+      emitSkill({
+        text: `---\nname: x\ndescription: d\nmetadata:\n  workflow_model_profile: strategic\n  workflow_invocation: ${mode}\n---\nb\n`,
+        canonicalName: 'x',
+        host,
+        model: 'opus',
+        invocation: mode,
+      }).text;
+
+    // The orchestrator is the single entry point; every other gate must stay
+    // off the model's reach or a skipped gate looks like a gate that ran.
+    assert.match(build('auto'), /^disable-model-invocation: false$/m);
+    assert.match(build('explicit'), /^disable-model-invocation: true$/m);
+  } finally {
+    box.cleanup();
+  }
+});
+
+test('an unreadable invocation declaration falls back to explicit', () => {
+  assert.equal(readInvocationMode('name: x'), 'explicit');
+  assert.equal(readInvocationMode('metadata:\n  workflow_invocation: nonsense'), 'explicit');
+  assert.equal(readInvocationMode('metadata:\n  workflow_invocation: auto'), 'auto');
 });

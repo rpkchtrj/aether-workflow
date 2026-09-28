@@ -1,2 +1,19 @@
-# All personal engineering workflow skills are explicit/user-triggered by default.
-all_disable_model_invocation: true
+# Invocation policy.
+#
+# The mode is declared per skill in its own frontmatter as
+# `metadata.workflow_invocation`, so the declaration stays portable and the host
+# adapter only supplies the mechanism (`disable-model-invocation` on Claude).
+#
+#   auto      -> engineering-orchestrator only. It is the workflow's single
+#                entry point, so the model may reach for it when a change
+#                starts. A false positive costs a paragraph; a false negative
+#                leaves the human typing it, which is the old baseline.
+#   explicit  -> every other skill. They are dispatched by the orchestrator's
+#                routing table, never by description matching. A gate that fires
+#                probabilistically cannot be told apart from a gate that was
+#                skipped, which would defeat the gate matrix.
+#
+# Dispatch is not autonomy. The orchestrator chooses the next skill from a fixed
+# table; the human still owns every stop point in the workflow.
+per_skill_invocation: true
+model_invocable: engineering-orchestrator

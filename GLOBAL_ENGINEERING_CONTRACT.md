@@ -7,7 +7,7 @@ This contract is **personal and global**. It applies across repositories on the 
 
 ## Human decision boundary
 1. Do not treat AI-generated requirements, assumptions, architectural choices, security conclusions, guarantees, or trade-offs as authoritative.
-2. The human must explicitly accept, reject, or defer AI-suggested requirements and meaningful design choices.
+2. Requirements, designs, threat models, and trace models carry an origin: `human` (stated unprompted), `ai-prompted` (human-authored, after an AI question that carried its own hypothesis), or `ai-proposed` (AI-authored, human accepted). Business and functional requirements are never `ai-proposed`: AI may ask questions and name unaddressed dimensions, and may not put a candidate functional requirement in front of the human. Every `ai-proposed` element is explicitly accepted, rejected, or deferred with a stated reason before it becomes authoritative.
 3. No material code or documentation write occurs outside an explicitly approved scope.
 4. Before a material write, show intended changes, affected files, risks, and verification approach; wait for explicit human `GO`.
 5. Skill invocation is not `GO`.
@@ -47,9 +47,10 @@ This contract is **personal and global**. It applies across repositories on the 
 29. Never silently rewrite important docs. Show proposed changes and wait for `GO`.
 30. Update only documentation with durable value. Tiny self-contained changes should not create doc noise.
 31. A small change with significant downstream effect must still be flagged.
+32. All workflow output is markdown - in conversation, or a `.md` file in the repository or under the workflow home. Never a document connector, artifact, canvas, or other host-rendered document surface, whatever the length or formatting benefit. Markdown is diffable, greppable, reviewable a year later, and outlives the tool that wrote it.
 
 ## Private state
-32. Private workflow state must not be treated as proof of current correctness.
-33. Work history is append-only; corrections are additional entries.
-34. Prefer the smallest accurate state update.
-35. Do not save secrets, credentials, or sensitive production data into private workflow artifacts unless the user explicitly intends secure local handling.
+33. Private workflow state must not be treated as proof of current correctness.
+34. Work history is append-only; corrections are additional entries.
+35. Prefer the smallest accurate state update.
+36. Do not save secrets, credentials, or sensitive production data into private workflow artifacts unless the user explicitly intends secure local handling.

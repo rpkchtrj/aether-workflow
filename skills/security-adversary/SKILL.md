@@ -17,7 +17,10 @@ Make security reasoning explicit before and after implementation.
 4. Never bypass or weaken security controls to make tests or demos easier.
 5. Treat remote inputs, deserialized data, callbacks, messages, trace metadata, and user-controlled resource requests as untrusted.
 6. Do not fabricate a finding; every finding needs a concrete attack precondition and path.
-7. Findings in changed scope that create a material security regression are stop-ship.
+7. Findings in changed scope that create a material security regression are stop-ship. Raise them immediately rather than at the end of the pass.
+8. The threat model is the human's. If no human threat model exists, stop and ask for one; do not supply a model and then attack it. Gaps in the human's model are named as gaps, and anything the human adds in response to a specific probe is `ai-prompted`.
+9. Review from the change surface and the source, not from another skill's summary of them.
+10. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Attack lenses
 Authentication; authorization; least privilege; tenant isolation; injection; SSRF/callbacks; path/file access; unsafe deserialization; replay; stale authorization; race/TOCTOU; resource exhaustion; secret leakage; telemetry; dependency/supply chain; recovery/failure paths; administrative/debug paths.

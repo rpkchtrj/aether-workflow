@@ -49,8 +49,10 @@ templates/REQUIREMENTS.md
 templates/SECURITY_PREFLIGHT.md
 templates/TRACE_PLAN.md
 templates/WORK_LOG.md
-templates/WORKFLOW_STATE.md
+templates/CHANGES.md
+templates/CHANGE_STATE.md
 test/install.test.js
 VERSION
 WORKFLOW_PLAYBOOK.pdf
 WORKFLOW.md
+WORKFLOW_GUIDE.md

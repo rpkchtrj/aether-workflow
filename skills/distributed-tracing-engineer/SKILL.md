@@ -19,6 +19,8 @@ Make causality visible without inventing causality or leaking sensitive data.
 6. Never use tracing as the authority for correctness or authorization.
 7. Never claim propagation/continuity without observed evidence.
 8. Instrumentation writes are allowed only after the trace plan is approved and human GO is given.
+9. If no human trace model exists, ask for one before critiquing. Entries the human adds in answer to a specific probe are `ai-prompted`; entries you supply and they accept are `ai-proposed`.
+10. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Review
 Logical operation; process/message boundaries; propagation; parent/link semantics; retries/attempts; fan-out/fan-in; cancellation; restart/recovery; sampling; cardinality; exporter failure; telemetry security.

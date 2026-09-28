@@ -34,6 +34,7 @@ For each, state risk and how it will be verified. Then wait for explicit GO.
 8. Keep public interfaces minimal.
 9. Never claim verification without observed evidence.
 10. Identify documentation impact before completion. Do not update important docs without a proposed change and human GO.
+11. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Interface and module-depth decisions
 Do not introduce interfaces, traits, protocols, or abstract types by default. Concrete implementation is the baseline; an abstraction must earn its place by hiding more complexity than it exposes. A single-implementation interface with no seam it is protecting is a violation of Hard Rule 2, not a neutral choice.

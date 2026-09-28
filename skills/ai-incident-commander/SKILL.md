@@ -18,6 +18,7 @@ Improve diagnosis and operational reasoning without jumping to a convenient root
 5. Require a violated invariant/contract or precise causal failure for the root-cause statement.
 6. If security is implicated, require trust-boundary and authorization analysis before remediation.
 7. After diagnosis, remediation still requires explicit human approval.
+8. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Flow
 Initial report -> scope/impact -> hypotheses -> progressive logs/metrics/traces -> targeted measurement/reproduction -> root cause -> violated invariant -> remediation options -> human decision -> verification -> postmortem.

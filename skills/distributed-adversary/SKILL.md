@@ -16,6 +16,8 @@ Find distributed correctness failures that ordinary happy-path tests miss.
 3. Do not reveal the failure too early when the task is an adversarial exercise.
 4. Preserve the rest of the system so the scenario remains realistic.
 5. Never weaken tests.
+6. Attack the code and the stated design, not another skill's account of them. Findings that break a correctness invariant in changed scope are stop-ship and are raised immediately.
+7. All output is markdown. Never a document connector, artifact, or other host-rendered surface.
 
 ## Attack model
 Messages may be delayed/lost/duplicated/reordered/stale; processes may crash before or after side effects; workers may pause; network paths may partition; retries may overlap; state may be replayed; old actors may continue after ownership changes.
