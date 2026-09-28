@@ -5,7 +5,7 @@
 | engineering-orchestrator | strategic | explicit | risk routing and gates |
 | requirements-architect | strategic | explicit | human-owned requirements |
 | system-design-challenger | strategic | explicit | adversarial design review |
-| implementation-agent | implementation | explicit | approved coding |
+| implementation-agent | implementation | explicit | approved coding, declared change surface |
 | runtime-engineer | implementation | explicit | runtime/language reasoning |
 | verification-engineer | implementation | explicit | evidence and tests |
 | distributed-adversary | strategic | explicit | distributed failure attack |

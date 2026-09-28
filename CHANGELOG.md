@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0
+
+- `implementation-agent` now declares its change plan by structural impact before the first write - new files, new modules, additive edits, and modifying edits with known callers listed - instead of a flat list of affected files.
+- Added a shared-surface stop: changes to a signature, contract, invariant, failure behavior or data shape consumed outside the approved scope are reported with their callers and compatibility options and await human instruction rather than being implemented. Adding a new symbol to a shared module is unaffected.
+- Added an interface and module-depth section. Concrete implementation is the baseline; a single-implementation interface protecting no seam is treated as unrequested scope. The abstraction decision is surfaced - including a decision *not* to abstract - only where a plurality signal exists, so the human can correct an assumption about implementations not visible in the repository.
+- Both ride on the existing pre-implementation `GO`; no new approval round and no new orchestrator gate.
+
 ## 1.3.0
 
 - Skills are now namespaced under `aether-wfl`. Claude Code installs as a generated plugin (`/aether-wfl:engineering-guide`); hosts with a flat skill namespace get the prefix baked into the skill name (`aether-wfl-engineering-guide`).

@@ -75,6 +75,16 @@ The workflow is risk-based, not security-optional. Every meaningful change gets 
 
 A small change that creates a security concern elsewhere must be escalated.
 
+## Implementation discipline
+
+`implementation-agent` does not start from a flat list of files it intends to touch. Before the first write it declares the change by structural impact - new files, new modules, additive edits to existing modules, and modifying edits to existing modules - with known callers listed for anything it intends to modify. That declaration is what you approve with `GO`.
+
+Anything whose contract, signature, invariant, failure behavior or data shape is consumed outside the approved scope is treated as **shared surface**. The agent does not change shared surface on its own: it stops, reports the symbol, its callers and the compatibility options, and waits for your instruction. Adding a new symbol to a shared module is not shared surface.
+
+Abstraction is not the default. Concrete implementation is the baseline, and a single-implementation interface that protects no real seam is treated as unrequested scope rather than good practice. The agent raises an interface decision only where something actually signals plurality - a component named for a category, an existing sibling, a requirement that hedges with `for now`, a config or feature-flag switch, or a wrapped external provider - and it surfaces the decision **either way**, including when it has decided against an interface. That is deliberate: you may know about planned implementations that are nowhere in the repository, and an assumption you can see is an assumption you can correct. Where nothing signals plurality, it writes the concrete code and says nothing.
+
+This rides on the same `GO` as the change plan. It is not an extra approval round.
+
 ## Change classes
 
 Class is a routing decision, not a label. It determines which gates run. If the class is uncertain, the orchestrator picks the higher-risk one.
