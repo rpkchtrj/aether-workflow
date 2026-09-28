@@ -77,10 +77,16 @@ A small change that creates a security concern elsewhere must be escalated.
 
 ## Change classes
 
-- **T0** - truly trivial/mechanical, no behavior or material side effect.
-- **T1** - localized low-risk behavior.
-- **T2** - meaningful behavior/API/state/persistence/concurrency/observability/performance change.
-- **T3** - critical security, migrations, distributed coordination, external side effects, incidents, high-risk performance, or broad blast radius.
+Class is a routing decision, not a label. It determines which gates run. If the class is uncertain, the orchestrator picks the higher-risk one.
+
+| Class | Meaning | Typical route |
+|---|---|---|
+| **T0** | Trivial; no meaningful behavior/security/contract/operational impact | Intent -> minimal verification -> done |
+| **T1** | Local low-risk behavior with no material boundary or downstream impact | Requirements/challenge -> security check -> implementation -> verification -> review if useful |
+| **T2** | Meaningful behavior, API/state/persistence/concurrency/observability/performance or downstream effect | Requirements -> security -> design challenge -> decision -> implementation -> verification -> adversarial/review -> docs as needed |
+| **T3** | Critical security/data/distributed/coordination/external-side-effect/migration/incident/high-blast-radius change | Full workflow: requirements -> security -> design -> trace when applicable -> human decision/ADR -> implementation -> verification -> adversarial tracks -> review -> docs -> final approval |
+
+Security is not a class. It is an always-on lens. A T1 change becomes T2/T3 when its real effect crosses a trust boundary, affects authorization, touches sensitive data, changes resource limits, introduces an external side effect, or invalidates an important security assumption.
 
 Every gate is explicitly reported as `REQUIRED`, `N/A WITH REASON`, or `OPTIONAL WITH REASON`; the orchestrator does not silently omit important concerns.
 
