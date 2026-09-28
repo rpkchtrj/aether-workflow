@@ -36,6 +36,8 @@ AI may analyze, challenge, implement, verify, attack assumptions, investigate in
 
 **[WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md) walks one change of each class, T0 through T3, end to end** — what the orchestrator does, where it stops, and what it wants from you at each stop. Start there if you want to see the workflow rather than read its rules.
 
+It is opinionated, not fixed. `config.yaml` and `overrides/<skill>.md` under `~/.engineering-workflow/` are yours: an install seeds them once and never writes over them, so a local tweak survives an upgrade, and anything that contradicts the workflow's safety rules is reported for you to reconcile rather than silently applied or silently dropped. See [Tweaking the workflow](#tweaking-the-workflow).
+
 ## Why this is global
 
 Do not add these skills to each application repository unless you specifically want to. They install at user scope and load across all your projects. This repository is the source distribution; the installer emits the skills into whichever agent you target.
