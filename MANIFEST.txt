@@ -11,6 +11,7 @@ hosts/README.md
 INSTALL.md
 install.sh
 lib/install.js
+lib/overlay.js
 lib/paths.js
 lib/project.js
 lib/skills.js

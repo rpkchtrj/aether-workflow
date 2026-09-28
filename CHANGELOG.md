@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+**User overlay.** Local tweaks now survive an upgrade. `~/.engineering-workflow/config.yaml` and `~/.engineering-workflow/overrides/<skill>.md` are user-owned: the installer seeds them once if absent and never writes over them again. An override is appended to its skill as a `## Local overrides` section - additive layering, since prose cannot be merged semantically.
+
+- An install reports rather than guesses. An override is refused, and the base skill installed unchanged, when it names a skill that no longer ships, carries a frontmatter fence, sets a model or invocation key, or reads as waiving a stop point or a class floor. `.reconciled.json` records the base each override was reconciled against, so an upgrade that changes that skill warns instead of relayering silently. The refusal checks are literal patterns and are documented as such - they catch obvious contradictions, not prose disagreement, which is why every applied override is named in the install output.
+- Fixed: `models.yaml` under the workflow home was overwritten on every install and never read - the mapping always came from the package - so the README's instruction to edit it and reinstall did nothing. It is now seeded once as a reference copy, and `config.yaml` carries the actual precedence via `model_strategic` / `model_implementation`.
+- Fixed: `config.yaml` was documented in `STATE_LAYOUT.md` but nothing created or read it.
+
+
 **Orchestrator becomes the control plane.** `engineering-orchestrator` is now the only skill the human invokes and the only one the model may reach for on its own; it dispatches every other skill from a fixed routing table. Invocation mode is declared per skill as `metadata.workflow_invocation` and emitted by the adapter, replacing the blanket `disable-model-invocation: true`. Skills other than the entry point stay explicit on purpose: a gate that fires on description matching cannot be told apart from a gate that was skipped.
 
 - Added a closed stop table, S1-S12. A stop not on the table is not a stop; a stop on it that applies is mandatory and recorded with the human's verbatim response. S2 (requirements), S8 (pre-write GO), S10 (reasoning defense) and S12 (final approval) are never waived above T0.

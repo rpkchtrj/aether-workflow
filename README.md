@@ -163,11 +163,62 @@ Skills declare a portable `model_profile` rather than a vendor-specific model ID
 | `strategic` | `opus` | planning, requirements, architecture, security, distributed reasoning, incident diagnosis, senior review |
 | `implementation` | `sonnet` | coding, routine verification, runtime-focused implementation, controlled experiments |
 
-Change the Claude mapping centrally in `hosts/claude/models.yaml`; do not rewrite every skill when models change. The source skills also show their model profile in a `## Model` section.
+Change the mapping for your machine in `~/.engineering-workflow/config.yaml` (`model_strategic: haiku`); it outranks the packaged `hosts/claude/models.yaml` and survives upgrades. Do not rewrite every skill when models change. The source skills also show their model profile in a `## Model` section.
 
 The adapter writes Claude Code's native skill `model` frontmatter at install time. That field is a Claude Code extension, so it is emitted only for Claude hosts and never reaches an agent that would not understand it; the underlying skill body remains portable.
 
-Because the Claude plugin is generated on your machine at install time rather than shipped pre-built, `models.yaml` stays editable per machine - change it and re-run `install`.
+The copy of `models.yaml` under the workflow home is a reference of what the package ships: seeded once, then left alone. Set overrides in `config.yaml` instead - see below.
+
+## Tweaking the workflow
+
+The workflow is opinionated on purpose, but it is yours. Two files under `~/.engineering-workflow/` are user-owned: an install seeds them once if they are missing and never writes over them again, so a local tweak survives an upgrade.
+
+**`config.yaml`** - flat `key: value`.
+
+```yaml
+model_strategic: haiku
+model_implementation: sonnet
+```
+
+**`overrides/<skill>.md`** - markdown appended to that skill as a `## Local overrides` section at install time.
+
+```text
+~/.engineering-workflow/overrides/verification-engineer.md
+
+  ## House rules
+  Always run `npm run lint` alongside the tests and report both.
+  Flaky tests are quarantined with an issue link, never deleted.
+```
+
+This is additive layering, not a semantic merge. Prose cannot be combined automatically, so your text follows the base rules rather than being woven into them, and the base rules stay in force.
+
+### When your tweak and an upgrade disagree
+
+An install reports rather than guesses. An override is **refused, and the base skill installed unchanged**, when it:
+
+- names a skill that does not ship in this version (renamed or removed upstream)
+- contains a frontmatter fence
+- sets a model or invocation key
+- reads as waiving S2, S8, S10 or S12
+- reads as downgrading a class-floored gate
+- instructs the agent to ignore a base rule rather than add to it
+
+```text
+OVERLAY CONFLICTS - 2 override(s) NOT applied:
+  senior-code-reviewer: appears to waive S2, S8, S10 or S12, which are unwaivable above T0
+  typo-skill: no skill named "typo-skill" ships in this version; it may have been renamed or removed
+  The base skills were installed unchanged. Reconcile these yourself,
+  then re-run install.
+```
+
+Separately, `.reconciled.json` records the base skill each override was last reconciled against. When an upgrade changes that skill, the install says so and applies the override anyway - drift is a prompt to re-read your addition, not a refusal:
+
+```text
+OVERLAY WARNINGS - applied, but worth a look:
+  verification-engineer: the base skill changed in this version; re-read your override against it
+```
+
+Those refusal checks are literal pattern matches. They catch the obvious contradictions; an override can still disagree with the base in prose no pattern will recognise, which is why every applied override is named in the install output rather than applied quietly.
 
 ## Install
 
