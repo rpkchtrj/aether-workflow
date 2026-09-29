@@ -1,5 +1,7 @@
 # Personal AI-Assisted Engineering Workflow
 
+![Aether Workflow: a portable AI-assisted engineering workflow with engineering judgment kept human-owned. Pipeline stages: Requirements, Design, Implementation, Verification, Review.](https://raw.githubusercontent.com/rpkchtrj/aether-workflow/main/assets/aether-workflow-banner.jpg)
+
 A portable, risk-based engineering workflow for using agentic AI as a force multiplier **without outsourcing engineering judgment**.
 
 This is intentionally a **global personal workflow**, not a repository convention and not a team process. Install it once on your machine and use it across every codebase you work on. Your teammates can use completely different workflows.
