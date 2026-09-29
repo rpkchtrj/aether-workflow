@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.1
 
 - Fixed: `uninstall` reported `Could not unregister aether-wfl` when no marketplace was registered, which is the end state uninstall wants rather than a failure. The install path already treated an already-added marketplace as idempotent; the uninstall path had no mirror of that check. A missing `claude` CLI is now reported as such instead of surfacing a raw `Command failed`. Added `test/register.test.js` - `lib/register.js` had no coverage.
 
