@@ -1,6 +1,6 @@
 {
   "name": "aether-workflow",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Personal AI-assisted engineering workflow: installs an orchestrator-dispatched set of Claude Code skills, a global engineering contract, and private out-of-repo workflow state.",
   "license": "MIT",
   "author": "Rupak Chatterjee",
