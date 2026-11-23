@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# codemap-sync: refresh <main checkout>/.plans/CODEMAP.md after a merge, in the background (post-merge, via git/hooks/_dispatch).
+# Runs only in the main checkout, only in repos that already have a codemap (opt-in), only when source files changed.
+# The agent reads freshly merged code, so it gets read-only tools plus Write/Edit on the codemap alone, and a budget cap:
+# the worst a prompt injection in merged code can do is a wrong codemap.
+# Env: CODEMAP_SYNC_OFF=1 skips; CODEMAP_SYNC_DRY=1 prints the command instead of running it.
+set -u
+[ -n "${CODEMAP_SYNC_OFF:-}" ] && exit 0
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
+[ "$(basename "$common")" = ".git" ] || exit 0
+root=$(dirname "$common")
+[ "$(git rev-parse --show-toplevel 2>/dev/null)" = "$root" ] || exit 0
+map="$root/.plans/CODEMAP.md"
+[ -f "$map" ] || exit 0
+sha=$(sed -n 's/^Mapped at: \([0-9a-f]\{7,40\}\).*/\1/p' "$map" | head -1)
+head=$(git rev-parse --short HEAD) branch=$(git branch --show-current)
+# The agent may run single git commands only (no $(...), pipes or &&), so the skill's step 0 and step 1 facts are resolved here.
+prompt="Run /aether-wfl:codemap. Already resolved, skip step 0's shell: this is the main checkout, root $root, HEAD $head on ${branch:-detached}. Use only single git commands (git diff, git log, git rev-parse, git ls-files), never \$(...), pipes or &&; other Bash is denied. Write only $map."
+if [ -n "$sha" ] && git cat-file -e "$sha^{commit}" 2>/dev/null; then
+  # Same filter as hooks/codemap-stale.sh.
+  changed=$(git diff --name-only "$sha"..HEAD 2>/dev/null \
+    | grep -vE '(^|/)(\.plans|docs|test|tests|__tests__|vendor|node_modules|dist|build)/|\.(md|lock)$|_test\.go$|\.(test|spec)\.[jt]sx?$')
+  [ -n "$changed" ] || exit 0
+  prompt="$prompt Incremental from Mapped at $sha; source files changed since then:
+$changed"
+else
+  prompt="$prompt Mapped at commit missing or unknown: full build."
+fi
+
+PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin"
+cmd=(claude -p "$prompt" --model sonnet --permission-mode dontAsk --max-budget-usd 2
+  --allowedTools Skill Read Grep Glob Agent
+  "Bash(git diff:*)" "Bash(git log:*)" "Bash(git rev-parse:*)" "Bash(git ls-files:*)"
+  "Edit(/$map)")
+if [ -n "${CODEMAP_SYNC_DRY:-}" ]; then printf '%q ' "${cmd[@]}"; echo; exit 0; fi
+command -v claude >/dev/null || { echo "codemap-sync: claude not found, codemap not refreshed" >&2; exit 0; }
+
+lock="$root/.plans/.codemap-sync.lock"
+mkdir "$lock" 2>/dev/null || { echo "codemap-sync: a refresh is already running" >&2; exit 0; }
+log="$root/.plans/.codemap-sync.log"
+echo "codemap-sync: refreshing the codemap in the background (log: $log)" >&2
+(
+  trap 'rmdir "$lock"' EXIT
+  trap '' HUP
+  cd "$root" || exit 1
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
+  # Use the claude.ai login, not a shell API key; drop a parent Claude session's vars (merges from /aether-wfl:pull).
+  unset ANTHROPIC_API_KEY CLAUDECODE $(env | sed -n 's/^\(CLAUDE_CODE_[A-Z_]*\)=.*/\1/p')
+  echo "== $(date '+%F %T') from ${sha:-none} to $(git rev-parse --short HEAD)"
+  "${cmd[@]}"
+  echo "== exit $?"
+) >>"$log" 2>&1 </dev/null &
+exit 0

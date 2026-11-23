@@ -14,3 +14,6 @@
 # Node
 node_modules/
 *.tgz
+
+# Local plans
+.plans/

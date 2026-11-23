@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/codemap-stale.sh\"", "timeout": 10}]}
+    ],
+    "PreToolUse": [
+      {"matcher": "Agent|Task", "hooks": [{"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/model-guard.sh\"", "timeout": 10}]},
+      {"matcher": "Edit|MultiEdit|Write|Bash", "hooks": [{"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/test-guard.sh\"", "timeout": 10}]},
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/no-claude-coauthor.sh\"", "timeout": 10}]}
+    ]
+  }
+}

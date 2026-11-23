@@ -1,0 +1,13 @@
+{
+  "name": "aether",
+  "owner": {
+    "name": "rpkchtrj"
+  },
+  "plugins": [
+    {
+      "name": "aether-wfl",
+      "source": "./plugin",
+      "description": "Change workflow: plan, preflight, codemap, pull, pr, security-audit, dead-code, diagnosing-bugs"
+    }
+  ]
+}

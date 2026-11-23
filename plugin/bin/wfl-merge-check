@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# wfl-merge-check <source> <target>: preview merging <source> into <target>. Markdown on stdout.
+# Read-only: no checkout, no ref updates, no worktrees (merge-tree writes objects only).
+# The skill fetches first; this script does not. Sections are leads, not proof.
+set -u
+export LC_ALL=C
+[ $# -eq 2 ] || { echo "usage: wfl-merge-check <source> <target>" >&2; exit 2; }
+for n in "$1" "$2"; do
+  # S1: branch names are attacker-controlled; allow only a conservative character set, before any use.
+  [[ $n =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "invalid branch name" >&2; exit 2; }
+  git check-ref-format --branch "$n" >/dev/null 2>&1 || { echo "invalid branch name: $n" >&2; exit 2; }
+done
+G() { git -c core.quotePath=false "$@"; }
+ssha=$(G rev-parse --verify -q --end-of-options "$1^{commit}") || { echo "cannot resolve: $1" >&2; exit 2; }
+tsha=$(G rev-parse --verify -q --end-of-options "$2^{commit}") || { echo "cannot resolve: $2" >&2; exit 2; }
+base=$(G merge-base "$ssha" "$tsha") || { echo "no merge base between $1 and $2" >&2; exit 2; }
+
+# Function names from `git diff -U0` hunk headers (text after the second @@).
+# TS/JS, Go and Python get an explicit header pattern (diff.wfl*.xfuncname, the outer group is the
+# header text) so indented methods and `export`/receiver forms are seen; other files use git's default.
+ATTR=$(mktemp); MTERR=$(mktemp); trap 'rm -f "$ATTR" "$MTERR"' EXIT
+printf '%s\n' '*.ts diff=wfljs' '*.tsx diff=wfljs' '*.js diff=wfljs' '*.jsx diff=wfljs' '*.mjs diff=wfljs' '*.cjs diff=wfljs' \
+  '*.go diff=wflgo' '*.py diff=wflpy' >"$ATTR"
+ID='[A-Za-z_$][A-Za-z0-9_$]*'
+# JS/TS header = a real definition only: `function name`, top-level `const|let|var name = (async )?function|(..) =>`,
+# or a class method `name(params) {` (params hold no `(` and no `=>`, so `useEffect(() => {` and `describe("x", function () {` are calls, not definitions).
+XJS_FN="[[:space:]]*(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function\\*?[[:space:]]+$ID"
+XJS_VAR="(export[[:space:]]+)?(default[[:space:]]+)?(const|let|var)[[:space:]]+$ID[[:space:]]*(:([^=;]|=>)*)?=[[:space:]]*(async[[:space:]]+)?(function|(<[^;]*>[[:space:]]*)?\\([^;]*\\)[[:space:]]*(:[^;=]*)?[[:space:]]*=>|$ID[[:space:]]*=>)"
+XJS_P="[[:space:]]+((public|private|protected|static|readonly|override)[[:space:]]+)*$ID[[:space:]]*(:([^=;]|=>)*)?=[[:space:]]*(async[[:space:]]+)?(\\([^;]*\\)[[:space:]]*(:[^;=]*)?[[:space:]]*=>|$ID[[:space:]]*=>)"
+XJS_M="[[:space:]]+((public|private|protected|static|async|get|set|readonly|override)[[:space:]]+)*$ID\\(([^(=;]|=[^>])*\\)[[:space:]]*(:[^={;]*)?\\{[[:space:]]*\$"
+XJS="^($XJS_FN|$XJS_VAR|$XJS_P|$XJS_M)"
+XGO='^(func[[:space:]]+(\([^)]*\)[[:space:]]*)?[A-Za-z_][A-Za-z0-9_]*)'
+XPY='^([[:space:]]*(async[[:space:]]+)?def[[:space:]]+[A-Za-z_][A-Za-z0-9_]*)'
+fnames() { # fnames <from> <to> [-- file]
+  G -c "core.attributesFile=$ATTR" -c "diff.wfljs.xfuncname=$XJS" -c "diff.wflgo.xfuncname=$XGO" -c "diff.wflpy.xfuncname=$XPY" diff -U0 "$@" \
+    | sed -n 's/^@@[^@]*@@ *//p' \
+    | sed -E -e 's/^[[:space:]]+//' -e 's/^func[[:space:]]*\([^)]*\)[[:space:]]*/func /' \
+        -e ':a' -e 's/^(export|default|async|public|private|protected|static|abstract|readonly|const|let|var|pub|class|function\*?|def|fn|func|sub)[[:space:]]+//' -e 'ta' \
+    | grep -oE '^[A-Za-z_][A-Za-z0-9_]*' | grep -vxE 'if|for|while|switch|catch|return|else|with|export|default' | sort -u
+}
+
+echo "# Merge check: \`$1\` into \`$2\`"
+echo
+mt=$(G merge-tree --write-tree --name-only --messages "$tsha" "$ssha" 2>"$MTERR"); rc=$?
+tree=$(head -n 1 <<<"$mt")
+if [ "$rc" -eq 1 ]; then
+  echo "## Conflicts"
+  sed -n '2,/^$/p' <<<"$mt" | sed '/^$/d; s/^/- `/; s/$/`/'
+  echo
+elif [ "$rc" -eq 0 ]; then
+  echo "## Clean merge"
+  echo "Tree: \`$tree\`"
+  echo
+else
+  { echo "merge-tree failed (exit $rc)"; cat "$MTERR"; } >&2
+  rm -f "$MTERR"
+  exit 2
+fi
+rm -f "$MTERR"
+
+sfiles=$(G diff --name-only "$base" "$ssha")
+tfiles=$(G diff --name-only "$base" "$tsha")
+both=$(comm -12 <(sort <<<"$sfiles") <(sort <<<"$tfiles") | sed '/^$/d')
+if [ -n "$both" ]; then
+  echo "## Both sides changed"
+  while IFS= read -r f; do
+    fs=$(comm -12 <(fnames "$base" "$ssha" -- "$f") <(fnames "$base" "$tsha" -- "$f") | sed 's/.*/`&`/' | paste -sd, - | sed 's/,/, /g')
+    if [ -n "$fs" ]; then echo "- \`$f\`: functions $fs"; else echo "- \`$f\`"; fi
+  done <<<"$both"
+  echo
+fi
+
+# Heuristic: names changed on the source side that appear as words in lines the target side added.
+names=$(fnames "$base" "$ssha")
+if [ -n "$names" ]; then
+  added=$(G diff -U0 "$base" "$tsha" | awk '
+    /^\+\+\+ /{f=substr($0,7); next}
+    /^@@/{split($3,a,","); n=substr(a[1],2)+0; next}
+    /^\+/{print f ":" n ":" substr($0,2); n++}')
+  up=""
+  while IFS= read -r nm; do
+    [ -n "$added" ] || break
+    hit=$(grep -wF -- "$nm" <<<"$added" | head -n 3 | cut -d: -f1,2 | sed 's/.*/`&`/' | paste -sd, - | sed 's/,/, /g')
+    [ -n "$hit" ] && up="$up- \`$nm\` -> $hit
+"
+  done <<<"$names"
+  if [ -n "$up" ]; then
+    echo "## Upstream changes your side calls"
+    echo "(grep heuristic: a name changed on the source side that appears in lines the target side added or changed; a lead, not proof)"
+    printf '%s\n' "$up"
+  fi
+fi
+
+top=$(G rev-parse --show-toplevel)
+idx="$top/.decisions/INDEX.md"
+if [ -f "$idx" ]; then
+  delta=$(G diff -U0 "$base" "$ssha" | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)')
+  dec=""
+  while IFS= read -r line; do
+    case "$line" in "- ["*) ;; *) continue ;; esac
+    id=$(sed 's/^- \[\([^]]*\)\].*/\1/' <<<"$line")
+    field() { sed -n "s/.*| $1: \([^|]*\).*/\1/p" <<<"$line" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | sed '/^$/d'; }
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      m=$(grep -F -- "$p" <<<"$sfiles" | awk -v p="$p" 'index($0,p)==1' | head -n 1)
+      [ -n "$m" ] && dec="$dec- \`$id\`: path \`$p\` matches \`$m\`
+"
+    done <<<"$(field paths)"
+    while IFS= read -r it; do
+      tok=${it##* }
+      [ "${#tok}" -ge 3 ] || continue
+      grep -qF -- "$tok" <<<"$delta" && dec="$dec- \`$id\`: interface \`$tok\` in added or removed lines
+"
+    done <<<"$(field interfaces)"
+  done <"$idx"
+  if [ -n "$dec" ]; then
+    echo "## Decisions touched"
+    printf '%s\n' "$dec"
+  fi
+fi
+exit 0
