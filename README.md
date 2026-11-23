@@ -76,12 +76,11 @@ You get the skills and hooks. You do not get `ctx`, the global git hooks or the 
 
 The global hooks path and the `ctx` link point into the clone. If you move or delete `~/aether-workflow`, git hooks stop working and `ctx` breaks. The `CLAUDE.md` import breaks too. Move it, then run `install.sh` again from the new place, and remove the old settings by hand.
 
-## Optional companions
+## Optional companion
 
-Not installed by this repo. Each has its own installer.
+Not installed by this repo; it has its own installer.
 
-- `/understand` from the understand-anything plugin: an interactive tour of a codebase. Run it in the main checkout and leave its auto-update off.
-- Orca: manages git worktrees and parallel agent workers. The feature flow can use an Orca worktree and Orca workers, but does not need them.
+- `/understand` from the understand-anything plugin: an interactive tour of a codebase. **aether does not install it and does not depend on it.** If its knowledge graph exists in a repo, `/aether-wfl:codemap` uses it as a starting inventory; otherwise codemap maps the repo on its own. If you use it, run it in the main checkout and leave its auto-update off.
 
 ## Upgrading from v2
 

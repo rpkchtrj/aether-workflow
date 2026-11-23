@@ -5,7 +5,7 @@ This is the day-to-day flow the `aether-wfl` plugin supports. Every command belo
 ## Once per repo
 
 1. `/aether-wfl:codemap` (Sonnet) builds `.plans/CODEMAP.md`.
-2. Optionally run `/understand` in the main checkout for your own tour of the code. Leave its auto-update off. It comes from the separate understand-anything plugin, which this repo does not install.
+2. Optional: `/understand`, an interactive tour of the code for you. **It is not part of aether and is not installed by it**: it comes from the separate understand-anything plugin. aether does not depend on it. If its knowledge graph exists (`.ua/knowledge-graph.json` or `.understand-anything/knowledge-graph.json`), `/aether-wfl:codemap` uses it as a starting inventory and checks it against the tree; without it, codemap maps the repo itself. If you use it, run it in the main checkout and leave its auto-update off.
 
 ## Every session (automatic)
 
@@ -16,12 +16,12 @@ This is the day-to-day flow the `aether-wfl` plugin supports. Every command belo
 
 1. `/aether-wfl:plan-change <task or ticket>`, in normal mode (runs on Opus).
 2. Answer all decisions in one reply, then approve.
-3. Work on a feature branch, usually in an Orca worktree. Implementation stops if you are on the repo's default branch or the plan's base branch.
+3. Work on a feature branch, or in a git worktree if you use them (`git worktree add ../<repo>-<feature> -b <feature>`). Implementation stops if you are on the repo's default branch or the plan's base branch.
    After approval, `/aether-wfl:plan-change` asks once: "Implement now?"
 4. On yes, it runs the plan in waves with Sonnet workers. Each wave is one commit on the branch.
 5. After the waves it runs the Definition of done checks, then an Opus preflight, with at most 3 fix rounds. It fixes only the must-fixes that are auto-fixable. It stops and asks you on security findings, drift from the plan, test-expectation changes, manual DoD items and anything outside the plan.
 6. It writes `.plans/<slug>-report.md` and records the decisions plus a plan summary in `.decisions/`.
-   On no, resume later with `/aether-wfl:plan-change <plan>` and say "implement". Or revise the plan first: write `change:` in the Review cells and approve again. You can also implement slice by slice yourself, in your own session or in an Orca worker.
+   On no, resume later with `/aether-wfl:plan-change <plan>` and say "implement". Or revise the plan first: write `change:` in the Review cells and approve again. You can also implement slice by slice yourself: "implement slice N of `.plans/<slug>.md`".
 7. A separate `/aether-wfl:preflight` is then only needed if you implemented by hand. Fix the security section and must-fix items; decide on any drift.
 8. If the branch has to be merged into another one, preview it first with `/aether-wfl:pull <source> into <target>`. It tests the merge without touching the target and reports conflicts and clean merges that change behaviour. It merges locally only if you say yes, and never pushes. To open a PR or MR, use `/aether-wfl:pr <feature> -> <target>`. It runs the same preview, merges the target into your feature branch and pushes that branch only on your yes, then creates the PR (`gh`) or MR (`glab`) and returns the link. Neither pushes the target or merges the PR.
 9. Merge.
@@ -55,7 +55,7 @@ It counts as small only if it's one file, under ~30 lines, adds no new function 
   - Review `.plans/dead-code-<date>.md`.
   - Remove the safe items with `/aether-wfl:plan-change remove the Safe items in <report>`.
   - Pass any reachable-but-unused routes it lists to the next security audit.
-- Every 2 weeks, or before working in an area that changed a lot: `/aether-wfl:codemap`, plus `/understand` if you use the tour.
+- Every 2 weeks, or before working in an area that changed a lot: `/aether-wfl:codemap`, plus `/understand` if you have it installed and use the tour.
 
 ## Models
 
@@ -63,4 +63,4 @@ It counts as small only if it's one file, under ~30 lines, adds no new function 
 |---|---|
 | Sonnet | Default. Small tasks, implementation, `/aether-wfl:codemap`, `/aether-wfl:dead-code`, running `/aether-wfl:preflight`, first-pass debugging |
 | Opus | `/aether-wfl:plan-change` and the `/aether-wfl:preflight` reviewer (both switch automatically). The security audit and stalled debugging (you switch with `/model opus`) |
-| Never | Haiku and Fable. Subagents are blocked by the hook; Orca workers only by the rule in `rules/AETHER.md` (imported into your CLAUDE.md) |
+| Never | Haiku and Fable. Subagents are blocked by the hook; agents started outside Claude Code's subagents only by the rule in `rules/AETHER.md` (imported into your CLAUDE.md) |

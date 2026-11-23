@@ -1,6 +1,6 @@
 ## Models
 
-- Never use Haiku or Fable, for the session, subagents or Orca workers. A PreToolUse hook (`model-guard.sh`, shipped in the aether-wfl plugin: `plugin/hooks/model-guard.sh` in aether-workflow) denies them; always pass an explicit `model` when spawning a subagent.
+- Never use Haiku or Fable, for the session, subagents or any other agent workers you start. A PreToolUse hook (`model-guard.sh`, shipped in the aether-wfl plugin: `plugin/hooks/model-guard.sh` in aether-workflow) denies them; always pass an explicit `model` when spawning a subagent.
 - **Sonnet**: lookups, explaining code, small edits, tests, codemap refresh, implementing an approved plan.
 - **Opus**: planning non-trivial changes, security analysis, code review, debugging that has resisted a first attempt.
 - If this session is Opus and the task is Sonnet-shaped, say so in one line and suggest `/model sonnet`, or delegate it to a `sonnet` subagent.
