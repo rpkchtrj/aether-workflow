@@ -63,4 +63,25 @@ else
 fi
 # ---- T12 end ----
 
+# ---- T10 begin: the docs name every shipped skill and the install route ----
+for d in "$REPO"/plugin/skills/*/; do
+  s=$(basename "$d")
+  if grep -qF "/aether-wfl:$s" "$REPO/WORKFLOW.md"; then
+    ok T10 "WORKFLOW.md names /aether-wfl:$s"
+  else
+    nok T10 "WORKFLOW.md lacks /aether-wfl:$s"
+  fi
+done
+if grep -qF 'install.sh' "$REPO/README.md"; then
+  ok T10 "README.md mentions install.sh"
+else
+  nok T10 "README.md lacks install.sh"
+fi
+if grep -qF 'aether-wfl@aether' "$REPO/README.md"; then
+  ok T10 "README.md mentions aether-wfl@aether"
+else
+  nok T10 "README.md lacks aether-wfl@aether"
+fi
+# ---- T10 end ----
+
 exit "$rc"

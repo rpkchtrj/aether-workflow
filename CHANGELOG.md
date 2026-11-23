@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.0
+
+**Breaking:** v2 is replaced. The repo is now a Claude Code marketplace `aether` with one plugin, `aether-wfl`. The v2 tree is kept under the git tag `v2-final`.
+
+- Removed: the npm installer (`bin/aether.js`, `lib/`), the host adapters (`hosts/`), the v2 skills, templates, scripts and tests, `package.json` and the publish workflow. The npm package `aether-workflow` is deprecated.
+- Added: the plugin `aether-wfl` with 8 skills (`plan-change`, `preflight`, `codemap`, `pull`, `pr`, `security-audit`, `dead-code`, `diagnosing-bugs`), invoked as `/aether-wfl:<name>`. `security-audit` and `diagnosing-bugs` are vendored under MIT, each with an `UPSTREAM` file.
+- Added: four hooks (stale-codemap notice, model guard, test guard, no Claude co-author) and two bins (`wfl-merge-check`, `codemap-sync`).
+- Added: `install.sh`, which sets up `ctx`, the global git hooks (only when `core.hooksPath` is unset), settings attribution, `~/Context`, the ctx sync hooks, the `CLAUDE.md` import of `rules/AETHER.md`, and the marketplace and plugin registration. It can be run again safely.
+- Added: `bin/ctx`, `git/hooks/` and `rules/AETHER.md`, moved in from the author's dotfiles so this repo is the single source.
+- Fixed (S2): `/aether-wfl:pr` no longer puts the PR or MR title on the command line. The title is written to a file and read back, so a crafted commit subject cannot run shell commands.
+- Docs: README and WORKFLOW rewritten for the final workflow.
+
 ## 2.0.1
 
 - Fixed: `uninstall` reported `Could not unregister aether-wfl` when no marketplace was registered, which is the end state uninstall wants rather than a failure. The install path already treated an already-added marketplace as idempotent; the uninstall path had no mirror of that check. A missing `claude` CLI is now reported as such instead of surfacing a raw `Command failed`. Added `test/register.test.js` - `lib/register.js` had no coverage.
