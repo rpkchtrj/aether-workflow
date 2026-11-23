@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""Project knowledge shared by every worktree of a repo, never copied: ~/Context/<repo>/ holds it,
+and each worktree (the main checkout too) has symlinks into it. <repo> is the main checkout's
+folder name, so all worktrees of a repo share one folder.
+
+Shared, when git doesn't track them:
+  - the paths listed in ~/Context/<repo>/.share (one per line, relative to the repo root;
+    defaults: .ua, docs, .decisions, design_draft.md, concepts_brief.md)
+  - README.md / CLAUDE.md in any folder (elephant-goldfish's per-folder maps)
+A file git tracks is never touched: it stays per branch. Linked paths go in the repo's
+.git/info/exclude (shared by its worktrees), so git status stays clean and nothing gets committed.
+
+`ctx sync` (Claude Code's SessionStart and Stop hooks, and worktree-setup) moves new real files from
+this worktree into ~/Context/<repo>/ and links whatever other worktrees put there. When both sides
+have a file, the newer one wins (for .ua: meta.json's lastAnalyzedAt) and the other goes to
+~/Context/<repo>/.ctx/archive/. ~/Context/<repo>/ is a local git repo (never pushed) committed on
+every change: a delete through a symlink deletes for every worktree, so that history is the undo.
+
+  ctx              status of this worktree
+  ctx sync         adopt + link (what the hooks run; --quiet prints nothing)
+  ctx add <path>   share another path (relative to the repo root), then sync
+"""
+import fcntl
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime
+
+CONTEXT = os.path.expanduser("~/Context")
+DEFAULT_SHARE = [".ua", "docs", ".decisions", "design_draft.md", "concepts_brief.md"]
+FOLDER_DOCS = {"README.md", "CLAUDE.md"}
+SKIP_DIRS = {".git", ".ctx"}
+EXCLUDE_BEGIN = "# >>> ctx: shared from ~/Context (bin/ctx) >>>"
+EXCLUDE_END = "# <<< ctx <<<"
+STORE_IGNORE = ".ctx/\n.DS_Store\n.ua/intermediate/\n.ua/tmp/\n.ua/.trash-*/\n"
+QUIET = "--quiet" in sys.argv
+
+
+def say(*a):
+    if not QUIET:
+        print(*a)
+
+
+def git(*args, cwd):
+    out = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    return out.stdout if out.returncode == 0 else None
+
+
+class Repo:
+    def __init__(self, cwd):
+        self.root = (git("rev-parse", "--show-toplevel", cwd=cwd) or "").strip()
+        if not self.root:
+            raise SystemExit(0 if QUIET else "not in a git repository")
+        porcelain = git("worktree", "list", "--porcelain", cwd=self.root) or ""
+        main = porcelain.splitlines()[0].removeprefix("worktree ") if porcelain else self.root
+        self.name = os.path.basename(main)
+        self.store = os.path.join(CONTEXT, self.name)
+        common = (git("rev-parse", "--git-common-dir", cwd=self.root) or ".git").strip()
+        self.exclude = os.path.join(self.root, common, "info", "exclude")
+        self.tracked = set((git("ls-files", "-z", cwd=self.root) or "").split("\0")) - {""}
+        self.tracked_dirs = {os.path.dirname(f) for f in self.tracked}
+        for d in list(self.tracked_dirs):
+            while d:
+                d = os.path.dirname(d)
+                self.tracked_dirs.add(d)
+
+    def share_list(self):
+        try:
+            with open(os.path.join(self.store, ".share")) as f:
+                return [l.strip().strip("/") for l in f if l.strip() and not l.startswith("#")]
+        except FileNotFoundError:
+            return DEFAULT_SHARE
+
+    def is_tracked(self, rel):
+        return rel in self.tracked or rel in self.tracked_dirs
+
+
+def stamp(path):
+    """How new a shared item is: .ua by when it was analyzed, anything else by its newest file."""
+    meta = os.path.join(path, "meta.json")
+    if os.path.basename(path) == ".ua" and os.path.isfile(meta):
+        try:
+            when = json.load(open(meta)).get("lastAnalyzedAt", "")
+            return datetime.fromisoformat(when.replace("Z", "+00:00")).timestamp()
+        except (ValueError, OSError):
+            pass
+    if os.path.isdir(path):
+        return max((os.path.getmtime(os.path.join(d, f)) for d, _, fs in os.walk(path) for f in fs), default=0)
+    return os.path.getmtime(path)
+
+
+def archive(repo, path, rel, why):
+    dest = os.path.join(repo.store, ".ctx", "archive", f"{time.strftime('%Y%m%d-%H%M%S')}-{why}", rel)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.move(path, dest)
+    say(f"  archived {why} {rel} -> {os.path.relpath(dest, CONTEXT)}")
+
+
+def adopt(repo, rel):
+    """A real (non-symlink) file or folder at rel in this worktree: move it into the store, keeping
+    the newer of the two when the store has one too, then link it."""
+    here, there = os.path.join(repo.root, rel), os.path.join(repo.store, rel)
+    if os.path.lexists(there):
+        label = os.path.basename(repo.root)
+        if stamp(here) >= stamp(there):
+            archive(repo, there, rel, "older")
+        else:
+            archive(repo, here, rel, f"older-{label}")
+            link(repo, rel)
+            return
+    os.makedirs(os.path.dirname(there), exist_ok=True)
+    shutil.move(here, there)
+    say(f"  shared {rel}")
+    link(repo, rel)
+
+
+def link(repo, rel):
+    here, there = os.path.join(repo.root, rel), os.path.join(repo.store, rel)
+    if os.path.islink(here):
+        if os.readlink(here) == there:
+            return
+        os.unlink(here)
+    elif os.path.lexists(here):
+        return  # a real file: adopt() decides
+    os.makedirs(os.path.dirname(here), exist_ok=True)
+    os.symlink(there, here)
+    say(f"  linked {rel}")
+
+
+def store_folder_docs(repo, shared):
+    """Per-folder docs in the store, outside the shared paths (those are linked whole)."""
+    found = []
+    for d, dirs, files in os.walk(repo.store):
+        rel_d = os.path.relpath(d, repo.store)
+        rel_d = "" if rel_d == "." else rel_d
+        dirs[:] = [x for x in dirs if x not in SKIP_DIRS and os.path.join(rel_d, x) not in shared]
+        found += [os.path.join(rel_d, f) for f in files if f in FOLDER_DOCS and os.path.join(rel_d, f) not in shared]
+    return found
+
+
+def init_store(repo):
+    if os.path.isdir(os.path.join(repo.store, ".git")):
+        return
+    os.makedirs(repo.store, exist_ok=True)
+    with open(os.path.join(repo.store, ".gitignore"), "w") as f:
+        f.write(STORE_IGNORE)
+    if not os.path.exists(os.path.join(repo.store, ".share")):
+        with open(os.path.join(repo.store, ".share"), "w") as f:
+            f.write("# Paths shared by every worktree (relative to the repo root), when git doesn't track them.\n"
+                    "# README.md / CLAUDE.md in any folder are shared too. See bin/ctx.\n" + "\n".join(DEFAULT_SHARE) + "\n")
+    git("init", "-q", cwd=repo.store)
+    say(f"  created {repo.store}")
+
+
+def write_exclude(repo, paths):
+    try:
+        text = open(repo.exclude).read()
+    except FileNotFoundError:
+        text = ""
+    if EXCLUDE_BEGIN in text:
+        before, rest = text.split(EXCLUDE_BEGIN, 1)
+        text = before.rstrip("\n") + ("\n" if before.strip() else "") + rest.split(EXCLUDE_END, 1)[-1].lstrip("\n")
+    block = "\n".join([EXCLUDE_BEGIN, *sorted(f"/{p}" for p in paths), EXCLUDE_END]) if paths else ""
+    new = (text.rstrip("\n") + "\n\n" + block + "\n") if block else text
+    if not os.path.exists(repo.exclude) or new != open(repo.exclude).read():
+        os.makedirs(os.path.dirname(repo.exclude), exist_ok=True)
+        with open(repo.exclude, "w") as f:
+            f.write(new)
+
+
+def commit(repo):
+    if not os.path.isdir(os.path.join(repo.store, ".git")):
+        return
+    git("add", "-A", cwd=repo.store)
+    if git("diff", "--cached", "--quiet", cwd=repo.store) is None:  # exit 1: something staged
+        git("-c", "user.name=ctx", "-c", "user.email=ctx@localhost", "commit", "-q", "-m",
+            f"sync from {os.path.basename(repo.root)}", cwd=repo.store)
+
+
+def sync(repo):
+    os.makedirs(os.path.expanduser("~/.local/state/ctx"), exist_ok=True)
+    with open(os.path.expanduser(f"~/.local/state/ctx/{repo.name}.lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        shared = [p for p in repo.share_list() if not repo.is_tracked(p)]
+        # New per-folder docs written here (untracked, not yet excluded)
+        new_docs = [f for f in (git("ls-files", "-o", "--exclude-standard", "-z", cwd=repo.root) or "").split("\0")
+                    if os.path.basename(f) in FOLDER_DOCS and not os.path.islink(os.path.join(repo.root, f))
+                    and not any(f == p or f.startswith(p + "/") for p in shared)]
+        real = [p for p in shared if os.path.lexists(os.path.join(repo.root, p))
+                and not os.path.islink(os.path.join(repo.root, p))]
+        known = store_folder_docs(repo, set(shared)) if os.path.isdir(repo.store) else []
+        # Known docs replaced by a real file here (an editor that writes by rename)
+        real += [f for f in known if not repo.is_tracked(f) and os.path.isfile(os.path.join(repo.root, f))
+                 and not os.path.islink(os.path.join(repo.root, f))]
+        if not (real or new_docs or os.path.isdir(repo.store)):
+            return  # nothing to share in this repo yet
+        init_store(repo)
+        for rel in real + new_docs:
+            adopt(repo, rel)
+        for rel in shared:
+            if os.path.lexists(os.path.join(repo.store, rel)):
+                link(repo, rel)
+        tracked_here = set()
+        for rel in store_folder_docs(repo, set(shared)):
+            if repo.is_tracked(rel):
+                tracked_here.add(rel)
+            elif os.path.dirname(rel) == "" or os.path.dirname(rel) in repo.tracked_dirs:
+                link(repo, rel)
+            elif os.path.islink(os.path.join(repo.root, rel)):
+                os.unlink(os.path.join(repo.root, rel))  # its folder is gone on this branch
+                try:
+                    os.removedirs(os.path.dirname(os.path.join(repo.root, rel)))  # the now-empty folders
+                except OSError:
+                    pass
+                say(f"  unlinked {rel} (folder not on this branch)")
+        in_store = [p for p in shared if os.path.lexists(os.path.join(repo.store, p))]
+        write_exclude(repo, in_store + [p for p in store_folder_docs(repo, set(shared)) if p not in tracked_here])
+        commit(repo)
+
+
+def status(repo):
+    print(f"{repo.name}: {repo.store}" + ("" if os.path.isdir(repo.store) else " (nothing shared yet)"))
+    shared = [p for p in repo.share_list() if not repo.is_tracked(p)]
+    docs = store_folder_docs(repo, set(shared)) if os.path.isdir(repo.store) else []
+    for rel in shared + docs:
+        here, there = os.path.join(repo.root, rel), os.path.join(repo.store, rel)
+        if os.path.islink(here) and os.readlink(here) == there:
+            state = "linked"
+        elif repo.is_tracked(rel):
+            state = "tracked by git here: kept per branch"
+        elif os.path.lexists(here):
+            state = "real file here: ctx sync shares it"
+        elif os.path.dirname(rel) and os.path.dirname(rel) not in repo.tracked_dirs:
+            state = "folder not on this branch"
+        elif os.path.lexists(there):
+            state = "not linked here: ctx sync"
+        else:
+            state = "-"
+        print(f"  {rel:40} {state}")
+
+
+def main():
+    args = [a for a in sys.argv[1:] if a != "--quiet"]
+    if args[:1] == ["sync"] and os.environ.get("STUDY_TERMINAL"):
+        return  # study projects (study/wezterm) keep their docs in place, not in ~/Context
+    repo = Repo(os.getcwd())
+    if not args:
+        status(repo)
+    elif args[0] == "sync":
+        sync(repo)
+    elif args[0] == "add" and len(args) == 2:
+        rel = os.path.relpath(os.path.abspath(args[1]), repo.root)
+        if rel.startswith(".."):
+            raise SystemExit(f"{args[1]} is outside {repo.root}")
+        init_store(repo)
+        current = repo.share_list()
+        if rel not in current:
+            with open(os.path.join(repo.store, ".share"), "a") as f:
+                f.write(rel + "\n")
+        sync(repo)
+    else:
+        print(__doc__)
+
+
+if __name__ == "__main__":
+    main()

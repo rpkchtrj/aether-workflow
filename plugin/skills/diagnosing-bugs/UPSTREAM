@@ -1,0 +1,7 @@
+Vendored third-party skill (MIT, see LICENSE).
+Repo:   https://github.com/mattpocock/skills (package mattpocock-skills, installed from the claude-plugins-official marketplace)
+Path:   skills/engineering/diagnosing-bugs/
+Version: 1.3.1
+Cache:  ~/.claude/plugins/cache/claude-plugins-official/mattpocock-skills/1.3.1/skills/engineering/diagnosing-bugs
+Vendored: 2026-11-23
+Update: copy upstream at a new version over this folder (SKILL.md, agents/, scripts/), keeping UPSTREAM and LICENSE; review `git diff` of this folder before committing (these are instructions an agent follows); update Version, Cache and Vendored here. tests/test-vendor.sh diffs this folder against the Cache path (or $AETHER_UPSTREAM_MP).

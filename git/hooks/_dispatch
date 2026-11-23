@@ -1,0 +1,23 @@
+#!/bin/sh
+# Global git hook dispatcher (core.hooksPath -> this directory). Every client hook name is a symlink to
+# this file. A global hooksPath replaces a repo's .git/hooks, so after our own check this chains to
+# <repo>/.git/hooks/<name> with the same arguments and stdin.
+name=$(basename "$0")
+
+if [ "$name" = commit-msg ] && [ -f "$1" ]; then
+  if grep -v '^#' "$1" | grep -qiE 'co-authored-by:.*(claude|noreply@anthropic\.com)|generated with.*claude code'; then
+    echo "commit-msg: Claude must not be a co-author or footer (Co-Authored-By: Claude / Generated with Claude Code). Remove it and commit again." >&2
+    exit 1
+  fi
+fi
+
+# After a merge into the main checkout's branch, refresh its codemap in the background (never fails the merge).
+if [ "$name" = post-merge ]; then
+  sync="$(dirname "$0")/../../plugin/bin/codemap-sync"
+  [ -x "$sync" ] && "$sync"
+fi
+
+common=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+repo_hook="$common/hooks/$name"
+[ -f "$repo_hook" ] && [ -x "$repo_hook" ] && exec "$repo_hook" "$@"
+exit 0

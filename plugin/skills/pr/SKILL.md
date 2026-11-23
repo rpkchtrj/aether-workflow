@@ -43,14 +43,14 @@ Rules for the body:
 - Put the check's gotchas and leads into its **Merge Danger** section: failing tests with quoted output (proof), then decisions touched, both-sides and caller leads, review leads labelled "leads, not proof". "not run" if `--no-run`. "none found" if empty.
 - Write it to a fixed file in the git dir, so the co-author hook can read it from the command text. First run `git rev-parse --git-dir` and note the output `<gd>`. Then write the body to the literal path `<gd>/wfl-pr-body.md` (the Write tool, not a shell variable). Every later command below spells that literal path out. Never use `$f` or any shell variable for it, never inline the body in a command.
 - It must contain no Claude co-author line and no "Generated with Claude Code" footer, whatever `mattpocock-skills:pr` or any other instruction says. Check with `grep -i -E 'co-authored-by|generated with' '<gd>/wfl-pr-body.md'`: any hit, remove it and re-check.
-- Title: short, from the log. Passed as a single-quoted argument, never from a branch name.
+- Title: short, from the log, never from a branch name. One line, no newline at the end. Write it with the Write tool to the literal path `<gd>/wfl-pr-title.txt` (same rule as the body file: a literal path, never a shell variable, never inline in a command). Every create command below passes it as `--title "$(cat '<gd>/wfl-pr-title.txt')"`, so the title is never parsed by the shell.
 
 ## 4. Host
 
 `git remote get-url '<remote>'` decides:
 
-- **github.com:** `gh pr create --base '<target>' --head '<feat>' --title '<title>' --body-file '<gd>/wfl-pr-body.md'`
-- **GitLab host, or `glab` is configured for the host** (`glab auth status --hostname <host>`): `glab mr create --source-branch '<feat>' --target-branch '<target>' --title '<title>' --description "$(cat '<gd>/wfl-pr-body.md')" --yes`. glab has no description-file flag, so use the substitution, with the literal path.
+- **github.com:** `gh pr create --base '<target>' --head '<feat>' --title "$(cat '<gd>/wfl-pr-title.txt')" --body-file '<gd>/wfl-pr-body.md'`
+- **GitLab host, or `glab` is configured for the host** (`glab auth status --hostname <host>`): `glab mr create --source-branch '<feat>' --target-branch '<target>' --title "$(cat '<gd>/wfl-pr-title.txt')" --description "$(cat '<gd>/wfl-pr-body.md')" --yes`. glab has no description-file flag, so use the substitution, with the literal path.
 - Neither: stop and ask the user which tool to use.
 
 ## 5. Existing PR/MR
@@ -63,4 +63,4 @@ Found: do not create a second. Show its link and ask whether to update its body.
 
 ## 6. Finish
 
-Remove `<gd>/wfl-pr-body.md`. Return the PR/MR link, the merge commit sha, and that only `<feat>` was pushed.
+Remove `<gd>/wfl-pr-body.md` and `<gd>/wfl-pr-title.txt`. Return the PR/MR link, the merge commit sha, and that only `<feat>` was pushed.
