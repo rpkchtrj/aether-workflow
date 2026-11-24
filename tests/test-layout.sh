@@ -15,8 +15,8 @@ if [ "$(jq -r '.name' "$mp" 2>/dev/null)" = aether ] &&
    [ "$(jq -r '.plugins[0].name' "$mp" 2>/dev/null)" = aether-wfl ] &&
    [ "$(jq -r '.plugins[0].source' "$mp" 2>/dev/null)" = ./plugin ] &&
    [ "$(jq -r '.name' "$pj" 2>/dev/null)" = aether-wfl ] &&
-   [ "$(jq -r '.version' "$pj" 2>/dev/null)" = 3.1.0 ]; then
-  ok T1 "marketplace aether, plugin aether-wfl 3.1.0"
+   [ "$(jq -r '.version' "$pj" 2>/dev/null)" = 3.1.1 ]; then
+  ok T1 "marketplace aether, plugin aether-wfl 3.1.1"
 else
   nok T1 "manifests wrong or missing ($mp, $pj)"
 fi

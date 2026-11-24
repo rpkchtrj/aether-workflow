@@ -1,5 +1,5 @@
 {
   "name": "aether-wfl",
   "description": "Change workflow: plan-change, preflight, codemap, pull (guarded merge preview), pr (merge target into feature, open PR/MR), security-audit (vendored from cloudflare/security-audit-skill), dead-code (evidence-backed dead code report) and diagnosing-bugs (vendored from mattpocock-skills); blocks Claude co-author trailers and footers",
-  "version": "3.1.0"
+  "version": "3.1.1"
 }

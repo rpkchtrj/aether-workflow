@@ -102,11 +102,13 @@ Each candidate gets an ID (`A1`…), a one-line decision, and its **span**, whic
 
 Slug: short kebab-case of the task. File: `$root/.plans/<slug>.md`.
 
+Base: the branch this change will merge into, not the branch you are on (a plan made on a feature branch must not name that branch, or step 12's branch gate always fires). Run `bash ${CLAUDE_SKILL_DIR}/../preflight/find-base.sh` from the repo root; it prints `<branch> <how>`. It exits non-zero, or you are on the repo's default branch: ask once which branch this merges into. The sha is `git merge-base <base> HEAD`.
+
 ```markdown
 ---
 status: draft            # draft -> approved -> implementing -> done
 slug: <slug>
-base: <branch> @ <short sha>
+base: <branch this change merges into> @ <short sha of its merge-base with HEAD>
 created: <YYYY-MM-DD>
 approved: <YYYY-MM-DD or empty>
 ---
@@ -313,7 +315,7 @@ Add one line to `INDEX.md`: `- [<id>](<id>.md) summary | <what shipped, in one l
 
 ## 12. Implement
 
-You (the session that approved the plan) coordinate and do nothing heavy yourself: you dispatch workers, talk to the user, commit the waves and sequence the steps. Workers implement, check, fix, review and verify, each a fresh general-purpose subagent with an explicit `model`, and each returns a short summary (at most ~10 lines; the preflight worker returns its report). No worker writes a report file. Subagents cannot start subagents, so every worker below is started by you. Every worker prompt ends with: "Run one plain command per Bash call from the repo root: no `cd`, `;`, `&&` or `echo $?`."
+You (the session that approved the plan) coordinate and do nothing heavy yourself: you dispatch workers, talk to the user, commit the waves and sequence the steps. Workers implement, check, fix, review and verify, each a fresh general-purpose subagent with an explicit `model`, and each returns a short summary (at most ~10 lines; the preflight worker returns its report). No worker writes a report file. Subagents cannot start subagents, so every worker below is started by you. A worker prompt is its role text below plus facts (paths, IDs, shas, the slices running in parallel, findings verbatim); never add design or implementation guidance of your own. What the plan does not settle is the worker's to report, not yours to decide. Every worker prompt ends with: "Run one plain command per Bash call from the repo root: no `cd`, `;`, `&&` or `echo $?`."
 
 Group the slices into waves: a wave holds slices whose `Depends on` are all in earlier waves; slices in one wave that share a file move to a later wave. Ask once: "Implement now? Waves: 1: L1, L3 · 2: L2 · … One commit per wave on `<branch>`, then a drift and full-suite check, then preflight until no must-fix (at most 3 preflight runs). When you review and say done: DoD checks, plan summary, `status: done`. I stop for: <the gates below that apply>." Give no other options to pick from.
 

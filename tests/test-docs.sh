@@ -25,6 +25,13 @@ if printf '%s' "$fin" | grep -qF 'when the user says done' &&
 else
   nok T12 "finish order is not: user done, DoD, status: done"
 fi
+if has 'never add design or implementation guidance'; then ok T12 "worker prompts carry no coordinator design hints"; else nok T12 "worker prompts may carry coordinator design hints"; fi
+pc="$REPO/plugin/skills/plan-change/SKILL.md"
+if grep -qF 'base: <branch this change merges into>' "$pc" && grep -qF 'preflight/find-base.sh' "$pc"; then
+  ok T12 "plan base is the merge target, found with find-base.sh"
+else
+  nok T12 "plan base may record the current branch"
+fi
 # ---- T12 end ----
 
 # ---- T10 begin: the docs name every shipped skill and the install route ----

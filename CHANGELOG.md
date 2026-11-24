@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.1
+
+- Fixed: `/aether-wfl:plan-change` recorded the current branch as the plan's `base`, so a plan made on a feature branch always hit step 12's "on the base branch" gate. `base` is now the branch the change merges into (from `preflight/find-base.sh`, or asked once), with its merge-base sha.
+- Fixed: step 12 worker prompts carry only the role text and facts. The coordinating session no longer adds design guidance of its own, which had produced drift that preflight then flagged.
+
 ## 3.1.0
 
 - Changed: `/aether-wfl:plan-change` step 12. No report files: the index `.plans/<slug>-report.md` and the per-worker `.plans/<slug>-report/` are gone, and gates are recorded in the plan's `Review log`. The session commits each wave itself; there is no per-wave check worker. Drift from the plan and the full suite are checked once, after the last wave. Preflight runs at most 3 times, with one Sonnet fixer (which commits its round) between runs, and skips the Done report check. The Definition of done checks, plan summary, `INDEX.md` line and `status: done` follow once the user reviews and says done.

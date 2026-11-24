@@ -86,7 +86,7 @@ claude plugin marketplace update aether
 claude plugin update aether-wfl@aether
 ```
 
-Plugin only: the last two commands. Then restart Claude Code. To stay on a release, check out its tag instead of pulling (`git -C ~/aether-workflow checkout v3.1.0`); [CHANGELOG.md](CHANGELOG.md) lists what each one changed.
+Plugin only: the last two commands. Then restart Claude Code. To stay on a release, check out its tag instead of pulling (`git -C ~/aether-workflow checkout v3.1.1`); [CHANGELOG.md](CHANGELOG.md) lists what each one changed.
 
 ## Optional companion
 
