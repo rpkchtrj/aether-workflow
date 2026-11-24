@@ -76,6 +76,18 @@ You get the skills and hooks. You do not get `ctx`, the global git hooks or the 
 
 The global hooks path and the `ctx` link point into the clone. If you move or delete `~/aether-workflow`, git hooks stop working and `ctx` breaks. The `CLAUDE.md` import breaks too. Move it, then run `install.sh` again from the new place, and remove the old settings by hand.
 
+### Update
+
+Full install:
+
+```sh
+git -C ~/aether-workflow pull
+claude plugin marketplace update aether
+claude plugin update aether-wfl@aether
+```
+
+Plugin only: the last two commands. Then restart Claude Code. To stay on a release, check out its tag instead of pulling (`git -C ~/aether-workflow checkout v3.1.0`); [CHANGELOG.md](CHANGELOG.md) lists what each one changed.
+
 ## Optional companion
 
 Not installed by this repo; it has its own installer.

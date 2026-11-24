@@ -3,6 +3,7 @@
 ## 3.1.0
 
 - Changed: `/aether-wfl:plan-change` step 12. No report files: the index `.plans/<slug>-report.md` and the per-worker `.plans/<slug>-report/` are gone, and gates are recorded in the plan's `Review log`. The session commits each wave itself; there is no per-wave check worker. Drift from the plan and the full suite are checked once, after the last wave. Preflight runs at most 3 times, with one Sonnet fixer (which commits its round) between runs, and skips the Done report check. The Definition of done checks, plan summary, `INDEX.md` line and `status: done` follow once the user reviews and says done.
+- Docs: README has an Update section.
 
 ## 3.0.0
 
